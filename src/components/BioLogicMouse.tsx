@@ -3,7 +3,7 @@ import { useSequencer, type SequencerSettings } from '@/hooks/useSequencer'
 import { useGridInteraction } from '@/hooks/useGridInteraction'
 import { createRandomGrid } from '@/simulation/random'
 import Header from './Header'
-import Sidebar from './Sidebar'
+import AppSidebar from './Sidebar'
 import Grid from './Grid'
 import Footer from './Footer'
 
@@ -18,6 +18,7 @@ export default function BioLogicMouse() {
   const [loopLock, setLoopLock] = useState(false)
   const [loopSteps, setLoopSteps] = useState(16)
   const [seed, setSeed] = useState('bio-mouse')
+  const [sidebarOpen, setSidebarOpen] = useState(false)
 
   const mutableGridRef = useRef(grid)
   const manualMouseRef = useRef({ x: 16, y: 16 })
@@ -79,36 +80,39 @@ export default function BioLogicMouse() {
   }, [])
 
   return (
-    <div className="min-h-screen bg-black text-zinc-100 flex flex-col font-sans select-none overflow-hidden">
+    <div className="min-h-screen flex flex-col w-full select-none overflow-hidden">
       <Header
         isPlaying={isPlaying}
-        controlMode={controlMode}
         onTogglePlay={togglePlay}
-        onSetControlMode={setControlMode}
+        onToggleSidebar={() => setSidebarOpen(o => !o)}
       />
 
-      <main className="flex-1 flex flex-col lg:flex-row p-6 gap-8 overflow-hidden">
-        <Sidebar
-          gridSize={gridSize}
-          seed={seed}
-          mutationRate={mutationRate}
-          tempo={tempo}
-          scale={scale}
-          treatment={treatment}
-          onChangeGridSize={changeGridSize}
-          onSetSeed={setSeed}
-          onRandomize={() => randomizeGrid()}
-          onSetMutationRate={setMutationRate}
-          onSetTempo={setTempo}
-          onSetScale={setScale}
-          onSetTreatment={setTreatment}
-          loopLock={loopLock}
-          loopSteps={loopSteps}
-          onSetLoopLock={setLoopLock}
-          onSetLoopSteps={setLoopSteps}
-          onClear={clearGrid}
-        />
+      <AppSidebar
+        open={sidebarOpen}
+        onOpenChange={setSidebarOpen}
+        gridSize={gridSize}
+        seed={seed}
+        mutationRate={mutationRate}
+        tempo={tempo}
+        scale={scale}
+        treatment={treatment}
+        controlMode={controlMode}
+        onChangeGridSize={changeGridSize}
+        onSetSeed={setSeed}
+        onRandomize={() => randomizeGrid()}
+        onSetMutationRate={setMutationRate}
+        onSetTempo={setTempo}
+        onSetScale={setScale}
+        onSetTreatment={setTreatment}
+        onSetControlMode={setControlMode}
+        loopLock={loopLock}
+        loopSteps={loopSteps}
+        onSetLoopLock={setLoopLock}
+        onSetLoopSteps={setLoopSteps}
+        onClear={clearGrid}
+      />
 
+      <main className="flex-1 flex flex-col p-4 overflow-hidden">
         <Grid
           grid={grid}
           gridSize={gridSize}

@@ -1,61 +1,62 @@
-import { Play, Square, Music, Cpu, Hand, Compass } from 'lucide-react'
+import { Play, Square, Music, Sun, Moon, PanelLeft } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { Button } from '@/components/ui/button'
 
 interface HeaderProps {
   isPlaying: boolean
-  controlMode: string
   onTogglePlay: () => void
-  onSetControlMode: (mode: string) => void
+  onToggleSidebar: () => void
 }
 
-export default function Header({ isPlaying, controlMode, onTogglePlay, onSetControlMode }: HeaderProps) {
+export default function Header({ isPlaying, onTogglePlay, onToggleSidebar }: HeaderProps) {
+  const [dark, setDark] = useState(() => document.documentElement.classList.contains('dark'))
+
+  useEffect(() => {
+    const stored = localStorage.getItem('theme')
+    if (stored === 'dark') {
+      document.documentElement.classList.add('dark')
+      setDark(true)
+    }
+  }, [])
+
+  const toggleDark = () => {
+    const next = !dark
+    setDark(next)
+    document.documentElement.classList.toggle('dark', next)
+    localStorage.setItem('theme', next ? 'dark' : 'light')
+  }
+
   return (
-    <header className="px-8 py-5 border-b border-white/5 flex items-center justify-between bg-zinc-950/50 backdrop-blur-xl z-50">
-      <div className="flex items-center gap-4">
-        <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center shadow-2xl shadow-white/10">
-          <Music className="text-black" size={24} strokeWidth={2.5} />
+    <header className="px-4 py-3 border-b border-border flex items-center justify-between bg-background/80 backdrop-blur-sm z-50">
+      <div className="flex items-center gap-3">
+        <Button variant="ghost" size="icon" onClick={onToggleSidebar}>
+          <PanelLeft size={18} />
+        </Button>
+        <div className="w-9 h-9 bg-foreground rounded-xl flex items-center justify-center">
+          <Music className="text-background" size={18} strokeWidth={2.5} />
         </div>
         <div>
-          <h1 className="text-xl font-black tracking-tighter uppercase italic leading-none">Bio-Logic Mouse</h1>
-          <div className="flex items-center gap-2 mt-1">
-            <span className={`w-2 h-2 rounded-full ${isPlaying ? 'bg-indigo-500 animate-pulse' : 'bg-zinc-800'}`} />
-            <p className="text-[10px] text-zinc-500 uppercase tracking-widest font-bold">Engine v3.5 - High Res</p>
+          <h1 className="text-lg font-bold tracking-tight leading-none">Bio-Logic Mouse</h1>
+          <div className="flex items-center gap-1.5 mt-0.5">
+            <span className={`w-1.5 h-1.5 rounded-full ${isPlaying ? 'bg-emerald-500 animate-pulse' : 'bg-muted-foreground/30'}`} />
+            <p className="text-xs text-muted-foreground">v3.5</p>
           </div>
         </div>
       </div>
 
-      <div className="flex items-center gap-4">
-        <div className="flex bg-zinc-900 rounded-full p-1 border border-white/10 mr-4 shadow-inner">
-          <button
-            onClick={() => onSetControlMode('centroid')}
-            className={`flex items-center gap-2 px-5 py-2 rounded-full text-[10px] font-black uppercase tracking-widest transition-all ${controlMode === 'centroid' ? 'bg-white text-black shadow-lg' : 'text-zinc-500 hover:text-zinc-300'}`}
-          >
-            <Cpu size={14} /> Centroid
-          </button>
-          <button
-            onClick={() => onSetControlMode('manual')}
-            className={`flex items-center gap-2 px-5 py-2 rounded-full text-[10px] font-black uppercase tracking-widest transition-all ${controlMode === 'manual' ? 'bg-white text-black shadow-lg' : 'text-zinc-500 hover:text-zinc-300'}`}
-          >
-            <Hand size={14} /> Manual
-          </button>
-          <button
-            onClick={() => onSetControlMode('traveler')}
-            className={`flex items-center gap-2 px-5 py-2 rounded-full text-[10px] font-black uppercase tracking-widest transition-all ${controlMode === 'traveler' ? 'bg-white text-black shadow-lg' : 'text-zinc-500 hover:text-zinc-300'}`}
-          >
-            <Compass size={14} /> Traveler
-          </button>
-        </div>
+      <div className="flex items-center gap-2">
+        <Button variant="ghost" size="icon" onClick={toggleDark} className="rounded-full">
+          {dark ? <Sun size={18} /> : <Moon size={18} />}
+        </Button>
 
-        <button
+        <Button
           onClick={onTogglePlay}
-          className={`group flex items-center gap-3 px-10 py-3 rounded-full font-black transition-all duration-500 active:scale-95 ${
-            isPlaying
-              ? 'bg-red-500/10 text-red-500 border border-red-500/20 hover:bg-red-500 hover:text-white'
-              : 'bg-white text-black hover:bg-zinc-200 shadow-2xl shadow-white/20'
-          }`}
+          variant={isPlaying ? 'destructive' : 'default'}
+          className="gap-2"
         >
-          {isPlaying ? <Square size={16} fill="currentColor" /> : <Play size={16} fill="currentColor" className="group-hover:scale-110 transition-transform" />}
-          {isPlaying ? 'HALT' : 'START'}
-        </button>
+          {isPlaying ? <Square size={14} fill="currentColor" /> : <Play size={14} fill="currentColor" />}
+          {isPlaying ? 'Halt' : 'Start'}
+        </Button>
       </div>
     </header>
   )

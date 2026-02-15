@@ -1,14 +1,29 @@
-import { Dice5, Trash2, Sparkles, Grid3X3, Repeat } from 'lucide-react'
+import { useState, useEffect, type KeyboardEvent } from 'react'
+import { Dice5, Trash2, Sparkles, Grid3X3, Repeat, Cpu, Hand, Compass, ChevronDown } from 'lucide-react'
 import { SCALES } from '@/audio/notes'
 import { GRID_OPTIONS } from '@/simulation/constants'
+import { Button } from '@/components/ui/button'
+import { Slider } from '@/components/ui/slider'
+import { Input } from '@/components/ui/input'
+import {
+  Drawer,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+  DrawerDescription,
+} from '@/components/ui/drawer'
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
 
 interface SidebarProps {
+  open: boolean
+  onOpenChange: (open: boolean) => void
   gridSize: number
   seed: string
   mutationRate: number
   tempo: number
   scale: string
   treatment: string
+  controlMode: string
   onChangeGridSize: (size: number) => void
   onSetSeed: (seed: string) => void
   onRandomize: () => void
@@ -16,6 +31,7 @@ interface SidebarProps {
   onSetTempo: (tempo: number) => void
   onSetScale: (scale: string) => void
   onSetTreatment: (treatment: string) => void
+  onSetControlMode: (mode: string) => void
   loopLock: boolean
   loopSteps: number
   onSetLoopLock: (on: boolean) => void
@@ -23,152 +39,229 @@ interface SidebarProps {
   onClear: () => void
 }
 
-export default function Sidebar({
-  gridSize, seed, mutationRate, tempo, scale, treatment,
-  onChangeGridSize, onSetSeed, onRandomize, onSetMutationRate, onSetTempo,
-  onSetScale, onSetTreatment, loopLock, loopSteps, onSetLoopLock, onSetLoopSteps, onClear,
-}: SidebarProps) {
+function Section({ label, icon, children, defaultOpen = true }: {
+  label: string
+  icon?: React.ReactNode
+  children: React.ReactNode
+  defaultOpen?: boolean
+}) {
   return (
-    <aside className="w-full lg:w-80 flex flex-col gap-6 overflow-y-auto pr-2 custom-scrollbar pb-10">
-      <div className="bg-zinc-900/40 border border-white/5 p-6 rounded-[2rem] space-y-8 shadow-inner shadow-black/50">
+    <Collapsible defaultOpen={defaultOpen}>
+      <CollapsibleTrigger className="flex items-center justify-between w-full px-1 py-1.5 text-sm font-medium text-muted-foreground hover:text-foreground cursor-pointer rounded-md hover:bg-accent transition-colors">
+        <span className="flex items-center gap-2">
+          {icon}
+          {label}
+        </span>
+        <ChevronDown size={14} className="transition-transform [[data-state=closed]_&]:-rotate-90" />
+      </CollapsibleTrigger>
+      <CollapsibleContent className="pt-2 pb-1">
+        {children}
+      </CollapsibleContent>
+    </Collapsible>
+  )
+}
 
-        {/* Grid Size */}
-        <div>
-          <label className="text-[10px] font-black text-zinc-600 uppercase mb-3 block tracking-[0.2em] flex items-center gap-2">
-            <Grid3X3 size={12} className="text-white" /> Matrix Resolution
-          </label>
-          <div className="flex gap-1.5 p-1 bg-black/40 rounded-xl border border-white/5">
-            {GRID_OPTIONS.map((size) => (
-              <button
-                key={size}
-                onClick={() => onChangeGridSize(size)}
-                className={`flex-1 py-2 text-[10px] font-black rounded-lg transition-all ${
-                  gridSize === size
-                    ? 'bg-zinc-100 text-black shadow-lg'
-                    : 'text-zinc-500 hover:text-zinc-300'
-                }`}
-              >
-                {size}x{size}
-              </button>
-            ))}
-          </div>
-        </div>
+export default function AppSidebar({
+  open, onOpenChange,
+  gridSize, seed, mutationRate, tempo, scale, treatment, controlMode,
+  onChangeGridSize, onSetSeed, onRandomize, onSetMutationRate, onSetTempo,
+  onSetScale, onSetTreatment, onSetControlMode, loopLock, loopSteps, onSetLoopLock, onSetLoopSteps, onClear,
+}: SidebarProps) {
+  const [loopInput, setLoopInput] = useState(String(loopSteps))
 
-        {/* Seed */}
-        <div>
-          <label className="text-[10px] font-black text-zinc-600 uppercase mb-3 block tracking-[0.2em]">Genotype Seed</label>
-          <div className="flex gap-2">
-            <input
-              type="text" value={seed} onChange={(e) => onSetSeed(e.target.value)}
-              className="flex-1 bg-black/50 border border-white/10 rounded-xl px-4 py-2 text-sm font-mono focus:ring-1 focus:ring-white outline-none"
+  useEffect(() => {
+    setLoopInput(String(loopSteps))
+  }, [loopSteps])
+
+  const commitLoopInput = () => {
+    const n = parseInt(loopInput, 10)
+    if (!isNaN(n) && n >= 1) {
+      onSetLoopSteps(n)
+    } else {
+      setLoopInput(String(loopSteps))
+    }
+  }
+
+  const handleLoopKeyDown = (e: KeyboardEvent) => {
+    if (e.key === 'Enter') commitLoopInput()
+  }
+
+  return (
+    <Drawer direction="left" open={open} onOpenChange={onOpenChange}>
+      <DrawerContent className="h-full w-80 sm:max-w-sm">
+        <DrawerHeader>
+          <DrawerTitle>Settings</DrawerTitle>
+          <DrawerDescription className="sr-only">Application settings</DrawerDescription>
+        </DrawerHeader>
+
+        <div className="flex-1 overflow-y-auto px-4 pb-4 space-y-4">
+          {/* Crosshair Mode */}
+          <Section label="Crosshair Mode" icon={<Cpu size={14} />}>
+            <div className="flex rounded-md border border-input overflow-hidden">
+              {([
+                { key: 'centroid', label: 'Centroid', icon: <Cpu size={14} /> },
+                { key: 'manual', label: 'Manual', icon: <Hand size={14} /> },
+                { key: 'traveler', label: 'Traveler', icon: <Compass size={14} /> },
+              ] as const).map(({ key, label, icon }) => (
+                <button
+                  key={key}
+                  onClick={() => onSetControlMode(key)}
+                  className={`flex-1 flex items-center justify-center gap-1.5 px-2 py-1.5 text-sm font-medium transition-colors border-r last:border-r-0 border-input ${
+                    controlMode === key
+                      ? 'bg-primary text-primary-foreground'
+                      : 'bg-background hover:bg-accent text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  {icon} {label}
+                </button>
+              ))}
+            </div>
+          </Section>
+
+          {/* Matrix Resolution */}
+          <Section label="Matrix Resolution" icon={<Grid3X3 size={14} />}>
+            <div className="flex rounded-md border border-input overflow-hidden">
+              {GRID_OPTIONS.map((size) => (
+                <button
+                  key={size}
+                  onClick={() => onChangeGridSize(size)}
+                  className={`flex-1 px-2 py-1.5 text-sm font-medium transition-colors border-r last:border-r-0 border-input ${
+                    gridSize === size
+                      ? 'bg-primary text-primary-foreground'
+                      : 'bg-background hover:bg-accent text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  {size}x{size}
+                </button>
+              ))}
+            </div>
+          </Section>
+
+          {/* Genotype Seed */}
+          <Section label="Genotype Seed">
+            <div className="flex gap-2">
+              <Input
+                type="text"
+                value={seed}
+                onChange={(e) => onSetSeed(e.target.value)}
+                className="flex-1 font-mono text-sm"
+              />
+              <Button variant="outline" size="icon" onClick={onRandomize}>
+                <Dice5 size={16} />
+              </Button>
+            </div>
+          </Section>
+
+          {/* Entropy / Mutation */}
+          <Section label="Entropy / Mutation" icon={<Sparkles size={14} className="text-amber-500" />}>
+            <div className="flex justify-between text-xs text-muted-foreground mb-2">
+              <span>Rate</span>
+              <span className="font-mono">{(mutationRate * 100).toFixed(2)}%</span>
+            </div>
+            <Slider
+              min={0}
+              max={0.01}
+              step={0.0001}
+              value={[mutationRate]}
+              onValueChange={([v]) => onSetMutationRate(v)}
             />
-            <button onClick={onRandomize} className="p-3 bg-white/5 hover:bg-white/10 rounded-xl text-zinc-400">
-              <Dice5 size={20} />
-            </button>
+          </Section>
+
+          {/* Metronome */}
+          <Section label="Metronome">
+            <div className="flex justify-between text-xs text-muted-foreground mb-2">
+              <span>Tempo</span>
+              <span className="font-mono">{tempo} BPM</span>
+            </div>
+            <Slider
+              min={60}
+              max={220}
+              step={1}
+              value={[tempo]}
+              onValueChange={([v]) => onSetTempo(v)}
+            />
+          </Section>
+
+          {/* Harmony */}
+          <Section label="Harmony">
+            <div className="grid grid-cols-2 gap-1.5">
+              {Object.keys(SCALES).map((s) => (
+                <Button
+                  key={s}
+                  variant={scale === s ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => onSetScale(s)}
+                >
+                  {s.charAt(0).toUpperCase() + s.slice(1)}
+                </Button>
+              ))}
+            </div>
+          </Section>
+
+          {/* Voice Treatment */}
+          <Section label="Voice Treatment">
+            <div className="flex flex-col gap-1.5">
+              {['chord', 'line', 'arpeggio'].map((t) => (
+                <Button
+                  key={t}
+                  variant={treatment === t ? 'default' : 'outline'}
+                  size="sm"
+                  className="justify-start"
+                  onClick={() => onSetTreatment(t)}
+                >
+                  {t.charAt(0).toUpperCase() + t.slice(1)}
+                </Button>
+              ))}
+            </div>
+          </Section>
+
+          {/* Loop Lock */}
+          <Section label="Loop Lock" icon={<Repeat size={14} className="text-emerald-500" />}>
+            <Button
+              variant={loopLock ? 'default' : 'outline'}
+              size="sm"
+              className={`w-full mb-3 ${loopLock ? 'bg-emerald-600 hover:bg-emerald-700 text-white' : ''}`}
+              onClick={() => onSetLoopLock(!loopLock)}
+            >
+              {loopLock ? 'Locked' : 'Off'}
+            </Button>
+            <div className="flex gap-1.5 mb-2">
+              {[4, 8, 16, 32].map((n) => (
+                <Button
+                  key={n}
+                  variant={loopSteps === n ? 'default' : 'outline'}
+                  size="sm"
+                  className="flex-1"
+                  onClick={() => onSetLoopSteps(n)}
+                >
+                  {n}
+                </Button>
+              ))}
+            </div>
+            <Input
+              type="number"
+              min={1}
+              value={loopInput}
+              onChange={(e) => setLoopInput(e.target.value)}
+              onBlur={commitLoopInput}
+              onKeyDown={handleLoopKeyDown}
+              className="font-mono text-sm"
+              placeholder="Custom steps"
+            />
+          </Section>
+
+          {/* Wipe Matrix */}
+          <div className="pt-2">
+            <Button
+              variant="destructive"
+              className="w-full gap-2"
+              onClick={onClear}
+            >
+              <Trash2 size={16} /> Wipe Matrix
+            </Button>
           </div>
         </div>
-
-        {/* Mutation */}
-        <div>
-          <div className="flex justify-between items-center mb-3">
-            <label className="text-[10px] font-black text-zinc-600 uppercase tracking-[0.2em] flex items-center gap-2">
-              <Sparkles size={10} className="text-amber-400" /> Entropy / Mutation
-            </label>
-            <span className="text-xs font-mono text-amber-400">{(mutationRate * 100).toFixed(2)}%</span>
-          </div>
-          <input
-            type="range" min="0" max="0.01" step="0.0001" value={mutationRate}
-            onChange={(e) => onSetMutationRate(Number(e.target.value))}
-            className="w-full accent-amber-500 h-1 bg-zinc-800 rounded-lg appearance-none cursor-pointer"
-          />
-        </div>
-
-        {/* Tempo */}
-        <div>
-          <div className="flex justify-between items-center mb-3">
-            <label className="text-[10px] font-black text-zinc-600 uppercase tracking-[0.2em]">Metronome</label>
-            <span className="text-xs font-mono text-white">{tempo} BPM</span>
-          </div>
-          <input
-            type="range" min="60" max="220" value={tempo}
-            onChange={(e) => onSetTempo(Number(e.target.value))}
-            className="w-full accent-white h-1 bg-zinc-800 rounded-lg appearance-none cursor-pointer"
-          />
-        </div>
-
-        {/* Scale */}
-        <div>
-          <label className="text-[10px] font-black text-zinc-600 uppercase tracking-[0.2em] mb-3 block text-indigo-400">Harmony</label>
-          <div className="grid grid-cols-2 gap-2">
-            {Object.keys(SCALES).map((s) => (
-              <button
-                key={s} onClick={() => onSetScale(s)}
-                className={`px-3 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest border transition-all ${
-                  scale === s ? 'bg-white border-white text-black' : 'bg-transparent border-white/10 text-zinc-500'
-                }`}
-              >
-                {s}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Treatment */}
-        <div>
-          <label className="text-[10px] font-black text-zinc-600 uppercase tracking-[0.2em] mb-3 block">Voice Treatment</label>
-          <div className="space-y-1.5">
-            {['chord', 'line', 'arpeggio'].map((t) => (
-              <button
-                key={t} onClick={() => onSetTreatment(t)}
-                className={`w-full px-5 py-3.5 rounded-2xl text-[10px] font-black uppercase tracking-[0.15em] text-left flex items-center justify-between border transition-all ${
-                  treatment === t ? 'bg-zinc-100 border-white text-black' : 'bg-transparent border-white/5 text-zinc-600 hover:text-zinc-300'
-                }`}
-              >
-                {t}
-                <div className={`w-1.5 h-1.5 rounded-full ${treatment === t ? 'bg-black' : 'bg-zinc-800'}`} />
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Loop Lock */}
-        <div>
-          <label className="text-[10px] font-black text-zinc-600 uppercase mb-3 block tracking-[0.2em] flex items-center gap-2">
-            <Repeat size={12} className="text-emerald-400" /> Loop Lock
-          </label>
-          <button
-            onClick={() => onSetLoopLock(!loopLock)}
-            className={`w-full px-5 py-3.5 rounded-2xl text-[10px] font-black uppercase tracking-[0.15em] text-left flex items-center justify-between border transition-all mb-3 ${
-              loopLock ? 'bg-emerald-500 border-emerald-400 text-black' : 'bg-transparent border-white/5 text-zinc-600 hover:text-zinc-300'
-            }`}
-          >
-            {loopLock ? 'Locked' : 'Off'}
-            <div className={`w-1.5 h-1.5 rounded-full ${loopLock ? 'bg-black' : 'bg-zinc-800'}`} />
-          </button>
-          <div className="flex gap-1.5 p-1 bg-black/40 rounded-xl border border-white/5">
-            {[4, 8, 16, 32].map((n) => (
-              <button
-                key={n}
-                onClick={() => onSetLoopSteps(n)}
-                className={`flex-1 py-2 text-[10px] font-black rounded-lg transition-all ${
-                  loopSteps === n
-                    ? 'bg-zinc-100 text-black shadow-lg'
-                    : 'text-zinc-500 hover:text-zinc-300'
-                }`}
-              >
-                {n}
-              </button>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      <button
-        onClick={onClear}
-        className="w-full bg-zinc-900/40 hover:bg-red-500/10 hover:text-red-500 border border-white/5 py-4 rounded-2xl text-[10px] font-black uppercase tracking-[0.3em] flex items-center justify-center gap-3 transition-all"
-      >
-        <Trash2 size={16} /> Wipe Matrix
-      </button>
-    </aside>
+      </DrawerContent>
+    </Drawer>
   )
 }
