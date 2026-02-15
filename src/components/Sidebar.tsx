@@ -1,6 +1,6 @@
 import { useState, useEffect, type KeyboardEvent } from 'react'
 import { Dice5, Trash2, Sparkles, Grid3X3, Repeat, Cpu, Hand, Compass, ChevronDown } from 'lucide-react'
-import { SCALES } from '@/audio/notes'
+import { SCALE_INFO } from '@/audio/notes'
 import { GRID_OPTIONS } from '@/simulation/constants'
 import { Button } from '@/components/ui/button'
 import { Slider } from '@/components/ui/slider'
@@ -13,6 +13,13 @@ import {
   DrawerDescription,
 } from '@/components/ui/drawer'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 
 interface SidebarProps {
   open: boolean
@@ -184,35 +191,34 @@ export default function AppSidebar({
 
           {/* Harmony */}
           <Section label="Harmony">
-            <div className="grid grid-cols-2 gap-1.5">
-              {Object.keys(SCALES).map((s) => (
-                <Button
-                  key={s}
-                  variant={scale === s ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => onSetScale(s)}
-                >
-                  {s.charAt(0).toUpperCase() + s.slice(1)}
-                </Button>
-              ))}
-            </div>
+            <Select value={scale} onValueChange={onSetScale}>
+              <SelectTrigger className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {Object.entries(SCALE_INFO).map(([key, { label, description }]) => (
+                  <SelectItem key={key} value={key} label={label} description={description} />
+                ))}
+              </SelectContent>
+            </Select>
           </Section>
 
           {/* Voice Treatment */}
           <Section label="Voice Treatment">
-            <div className="flex flex-col gap-1.5">
-              {['chord', 'line', 'arpeggio'].map((t) => (
-                <Button
-                  key={t}
-                  variant={treatment === t ? 'default' : 'outline'}
-                  size="sm"
-                  className="justify-start"
-                  onClick={() => onSetTreatment(t)}
-                >
-                  {t.charAt(0).toUpperCase() + t.slice(1)}
-                </Button>
-              ))}
-            </div>
+            <Select value={treatment} onValueChange={onSetTreatment}>
+              <SelectTrigger className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {([
+                  { key: 'chord', label: 'Chord', description: 'All notes played simultaneously' },
+                  { key: 'line', label: 'Line', description: 'Single melodic voice' },
+                  { key: 'arpeggio', label: 'Arpeggio', description: 'Notes played in sequence' },
+                ] as const).map(({ key, label, description }) => (
+                  <SelectItem key={key} value={key} label={label} description={description} />
+                ))}
+              </SelectContent>
+            </Select>
           </Section>
 
           {/* Loop Lock */}

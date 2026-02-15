@@ -3,6 +3,19 @@ export const SCALES: Record<string, number[]> = {
   pentatonic: [0, 2, 4, 7, 9],
   chromatic: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11],
   dorian: [0, 2, 3, 5, 7, 9, 10],
+  'just-simple': [0, 2, 4, 5, 7, 9, 11],
+  'just-extended': [0, 2, 3, 5, 7, 8, 10],
+  'quarter-tone': [0, 0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5, 5.5, 6, 6.5, 7, 7.5, 8, 8.5, 9, 9.5, 10, 10.5, 11, 11.5],
+}
+
+export const SCALE_INFO: Record<string, { label: string; description: string }> = {
+  diatonic:        { label: 'Diatonic',               description: 'Standard 7-note major scale' },
+  pentatonic:      { label: 'Pentatonic',             description: 'Universal 5-note scale' },
+  chromatic:       { label: 'Chromatic',              description: 'All 12 semitones' },
+  dorian:          { label: 'Dorian',                 description: 'Minor scale with raised 6th' },
+  'just-simple':   { label: 'Just Simple',            description: 'Pure ratios (3:2, 5:4, 6:5)' },
+  'just-extended':  { label: 'Just Extended',         description: 'Higher primes (7, 11, 13-limit)' },
+  'quarter-tone':  { label: 'Quarter-tone (24-EDO)',  description: '24 equal divisions of the octave' },
 }
 
 const BASE_OCTAVE = 3
