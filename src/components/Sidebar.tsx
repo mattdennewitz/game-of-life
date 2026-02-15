@@ -1,5 +1,5 @@
 import { useState, useEffect, type KeyboardEvent } from 'react'
-import { Dice5, Trash2, Sparkles, Grid3X3, Repeat, Cpu, Hand, Compass, Orbit, ChevronDown } from 'lucide-react'
+import { Dice5, Trash2, Sparkles, Grid3X3, Repeat, Cpu, ChevronDown } from 'lucide-react'
 import { SCALE_INFO } from '@/audio/notes'
 import { GRID_OPTIONS } from '@/simulation/constants'
 import { Button } from '@/components/ui/button'
@@ -104,26 +104,21 @@ export default function AppSidebar({
         <div className="flex-1 overflow-y-auto px-4 pb-4 space-y-4">
           {/* Crosshair Mode */}
           <Section label="Crosshair Mode" icon={<Cpu size={14} />}>
-            <div className="flex rounded-md border border-input overflow-hidden">
-              {([
-                { key: 'centroid', label: 'Centroid', icon: <Cpu size={14} /> },
-                { key: 'manual', label: 'Manual', icon: <Hand size={14} /> },
-                { key: 'traveler', label: 'Traveler', icon: <Compass size={14} /> },
-                { key: 'lorenz', label: 'Lorenz', icon: <Orbit size={14} /> },
-              ] as const).map(({ key, label, icon }) => (
-                <button
-                  key={key}
-                  onClick={() => onSetControlMode(key)}
-                  className={`flex-1 flex items-center justify-center gap-1.5 px-2 py-1.5 text-sm font-medium transition-colors border-r last:border-r-0 border-input ${
-                    controlMode === key
-                      ? 'bg-primary text-primary-foreground'
-                      : 'bg-background hover:bg-accent text-muted-foreground hover:text-foreground'
-                  }`}
-                >
-                  {icon} {label}
-                </button>
-              ))}
-            </div>
+            <Select value={controlMode} onValueChange={onSetControlMode}>
+              <SelectTrigger className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {([
+                  { key: 'centroid', label: 'Centroid', description: 'Follows center of mass of living cells' },
+                  { key: 'manual', label: 'Manual', description: 'Mouse-controlled coordinate input' },
+                  { key: 'traveler', label: 'Traveler', description: 'Wanders toward nearby living cells' },
+                  { key: 'lorenz', label: 'Lorenz', description: 'Chaotic butterfly attractor trajectory' },
+                ] as const).map(({ key, label, description }) => (
+                  <SelectItem key={key} value={key} label={label} description={description} />
+                ))}
+              </SelectContent>
+            </Select>
           </Section>
 
           {/* Matrix Resolution */}
