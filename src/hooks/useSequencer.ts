@@ -10,6 +10,8 @@ export interface SequencerSettings {
   controlMode: string
   mutationRate: number
   gridSize: number
+  loopLock: boolean
+  loopSteps: number
 }
 
 function updateTraveler(
@@ -89,6 +91,7 @@ export function useSequencer(
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const nextNoteTimeRef = useRef(0)
   const stepRef = useRef(0)
+  const loopBufferRef = useRef<{ notes: number[]; pos: { x: number; y: number } }[]>([])
 
   useEffect(() => {
     engineRef.current = new AudioEngine()
@@ -101,30 +104,55 @@ export function useSequencer(
     const engine = engineRef.current
     if (!engine) return
 
-    const { tempo, treatment, gridSize, scale, controlMode, mutationRate } = settingsRef.current
+    const { tempo, treatment, gridSize, scale, controlMode, mutationRate, loopLock, loopSteps } = settingsRef.current
     const secondsPerBeat = 60.0 / tempo / 4
 
     while (nextNoteTimeRef.current < engine.ctx.currentTime + 0.1) {
       const time = nextNoteTimeRef.current
 
-      if (stepRef.current % 4 === 0) {
-        const nextGrid = getNextGeneration(mutableGridRef.current, gridSize, mutationRate)
-        mutableGridRef.current = nextGrid
-        requestAnimationFrame(() => setGrid(nextGrid))
+      const loopFull = loopLock && loopBufferRef.current.length >= loopSteps
+
+      // Pause evolution and movement when loop is replaying
+      if (!loopFull) {
+        if (stepRef.current % 4 === 0) {
+          const nextGrid = getNextGeneration(mutableGridRef.current, gridSize, mutationRate)
+          mutableGridRef.current = nextGrid
+          requestAnimationFrame(() => setGrid(nextGrid))
+        }
+
+        if (controlMode === 'traveler') {
+          updateTraveler(travelerRef, mutableGridRef.current, gridSize)
+        }
       }
 
-      if (controlMode === 'traveler') {
-        updateTraveler(travelerRef, mutableGridRef.current, gridSize)
+      let notes: number[]
+      let pos: { x: number; y: number }
+
+      if (loopFull) {
+        const entry = loopBufferRef.current[stepRef.current % loopSteps]
+        notes = entry.notes
+        pos = entry.pos
+      } else {
+        const live = calculateNotes(
+          mutableGridRef.current,
+          gridSize,
+          controlMode,
+          manualMouseRef.current,
+          scale,
+          travelerRef.current,
+        )
+        notes = live.notes
+        pos = live.pos
+
+        if (loopLock) {
+          loopBufferRef.current.push({ notes, pos })
+        }
       }
 
-      const { notes, pos } = calculateNotes(
-        mutableGridRef.current,
-        gridSize,
-        controlMode,
-        manualMouseRef.current,
-        scale,
-        travelerRef.current,
-      )
+      if (!loopLock) {
+        loopBufferRef.current = []
+      }
+
       requestAnimationFrame(() => setCentroid(pos))
 
       if (notes.length > 0) {

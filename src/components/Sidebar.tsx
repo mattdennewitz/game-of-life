@@ -1,4 +1,4 @@
-import { Dice5, Trash2, Sparkles, Grid3X3 } from 'lucide-react'
+import { Dice5, Trash2, Sparkles, Grid3X3, Repeat } from 'lucide-react'
 import { SCALES } from '@/audio/notes'
 import { GRID_OPTIONS } from '@/simulation/constants'
 
@@ -16,13 +16,17 @@ interface SidebarProps {
   onSetTempo: (tempo: number) => void
   onSetScale: (scale: string) => void
   onSetTreatment: (treatment: string) => void
+  loopLock: boolean
+  loopSteps: number
+  onSetLoopLock: (on: boolean) => void
+  onSetLoopSteps: (steps: number) => void
   onClear: () => void
 }
 
 export default function Sidebar({
   gridSize, seed, mutationRate, tempo, scale, treatment,
   onChangeGridSize, onSetSeed, onRandomize, onSetMutationRate, onSetTempo,
-  onSetScale, onSetTreatment, onClear,
+  onSetScale, onSetTreatment, loopLock, loopSteps, onSetLoopLock, onSetLoopSteps, onClear,
 }: SidebarProps) {
   return (
     <aside className="w-full lg:w-80 flex flex-col gap-6 overflow-y-auto pr-2 custom-scrollbar pb-10">
@@ -122,6 +126,37 @@ export default function Sidebar({
               >
                 {t}
                 <div className={`w-1.5 h-1.5 rounded-full ${treatment === t ? 'bg-black' : 'bg-zinc-800'}`} />
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Loop Lock */}
+        <div>
+          <label className="text-[10px] font-black text-zinc-600 uppercase mb-3 block tracking-[0.2em] flex items-center gap-2">
+            <Repeat size={12} className="text-emerald-400" /> Loop Lock
+          </label>
+          <button
+            onClick={() => onSetLoopLock(!loopLock)}
+            className={`w-full px-5 py-3.5 rounded-2xl text-[10px] font-black uppercase tracking-[0.15em] text-left flex items-center justify-between border transition-all mb-3 ${
+              loopLock ? 'bg-emerald-500 border-emerald-400 text-black' : 'bg-transparent border-white/5 text-zinc-600 hover:text-zinc-300'
+            }`}
+          >
+            {loopLock ? 'Locked' : 'Off'}
+            <div className={`w-1.5 h-1.5 rounded-full ${loopLock ? 'bg-black' : 'bg-zinc-800'}`} />
+          </button>
+          <div className="flex gap-1.5 p-1 bg-black/40 rounded-xl border border-white/5">
+            {[4, 8, 16, 32].map((n) => (
+              <button
+                key={n}
+                onClick={() => onSetLoopSteps(n)}
+                className={`flex-1 py-2 text-[10px] font-black rounded-lg transition-all ${
+                  loopSteps === n
+                    ? 'bg-zinc-100 text-black shadow-lg'
+                    : 'text-zinc-500 hover:text-zinc-300'
+                }`}
+              >
+                {n}
               </button>
             ))}
           </div>

@@ -15,6 +15,8 @@ export default function BioLogicMouse() {
   const [treatment, setTreatment] = useState('arpeggio')
   const [controlMode, setControlMode] = useState('centroid')
   const [mutationRate, setMutationRate] = useState(0.001)
+  const [loopLock, setLoopLock] = useState(false)
+  const [loopSteps, setLoopSteps] = useState(16)
   const [seed, setSeed] = useState('bio-mouse')
 
   const mutableGridRef = useRef(grid)
@@ -23,6 +25,7 @@ export default function BioLogicMouse() {
   const settingsRef = useRef<SequencerSettings>({
     scale, treatment, tempo,
     controlMode, mutationRate, gridSize,
+    loopLock, loopSteps,
   })
 
   // Keep settings ref in sync
@@ -30,8 +33,9 @@ export default function BioLogicMouse() {
     settingsRef.current = {
       scale, treatment, tempo,
       controlMode, mutationRate, gridSize,
+      loopLock, loopSteps,
     }
-  }, [scale, treatment, tempo, controlMode, mutationRate, gridSize])
+  }, [scale, treatment, tempo, controlMode, mutationRate, gridSize, loopLock, loopSteps])
 
   const { isPlaying, togglePlay, centroid } = useSequencer(
     mutableGridRef, settingsRef, manualMouseRef, travelerRef, setGrid,
@@ -98,6 +102,10 @@ export default function BioLogicMouse() {
           onSetTempo={setTempo}
           onSetScale={setScale}
           onSetTreatment={setTreatment}
+          loopLock={loopLock}
+          loopSteps={loopSteps}
+          onSetLoopLock={setLoopLock}
+          onSetLoopSteps={setLoopSteps}
           onClear={clearGrid}
         />
 
