@@ -1,5 +1,5 @@
 import { useState, useEffect, type KeyboardEvent } from 'react'
-import { Dice5, Trash2, Sparkles, Grid3X3, Repeat, Cpu, Hand, Compass, ChevronDown } from 'lucide-react'
+import { Dice5, Trash2, Sparkles, Grid3X3, Repeat, Cpu, Hand, Compass, Orbit, ChevronDown } from 'lucide-react'
 import { SCALE_INFO } from '@/audio/notes'
 import { GRID_OPTIONS } from '@/simulation/constants'
 import { Button } from '@/components/ui/button'
@@ -109,6 +109,7 @@ export default function AppSidebar({
                 { key: 'centroid', label: 'Centroid', icon: <Cpu size={14} /> },
                 { key: 'manual', label: 'Manual', icon: <Hand size={14} /> },
                 { key: 'traveler', label: 'Traveler', icon: <Compass size={14} /> },
+                { key: 'lorenz', label: 'Lorenz', icon: <Orbit size={14} /> },
               ] as const).map(({ key, label, icon }) => (
                 <button
                   key={key}

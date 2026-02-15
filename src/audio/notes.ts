@@ -29,6 +29,7 @@ export function calculateNotes(
   manualPos: { x: number; y: number },
   scaleKey: string,
   travelerPos: { x: number; y: number } = { x: 16, y: 16 },
+  lorenzPos: { gridX: number; gridY: number } = { gridX: 16, gridY: 16 },
 ): { notes: number[]; pos: { x: number; y: number } } {
   let targetX: number
   let targetY: number
@@ -39,6 +40,9 @@ export function calculateNotes(
   } else if (controlMode === 'traveler') {
     targetX = travelerPos.x
     targetY = travelerPos.y
+  } else if (controlMode === 'lorenz') {
+    targetX = lorenzPos.gridX
+    targetY = lorenzPos.gridY
   } else {
     let sumX = 0
     let sumY = 0

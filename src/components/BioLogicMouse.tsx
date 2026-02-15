@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback, type MouseEvent } from 'react'
-import { useSequencer, type SequencerSettings } from '@/hooks/useSequencer'
+import { useSequencer, type SequencerSettings, type LorenzState } from '@/hooks/useSequencer'
 import { useGridInteraction } from '@/hooks/useGridInteraction'
 import { createRandomGrid } from '@/simulation/random'
 import Header from './Header'
@@ -23,6 +23,7 @@ export default function BioLogicMouse() {
   const mutableGridRef = useRef(grid)
   const manualMouseRef = useRef({ x: 16, y: 16 })
   const travelerRef = useRef({ x: 16, y: 16, vx: 0.3, vy: 0.3 })
+  const lorenzRef = useRef<LorenzState>({ x: 1, y: 1, z: 1, gridX: 16, gridY: 16 })
   const settingsRef = useRef<SequencerSettings>({
     scale, treatment, tempo,
     controlMode, mutationRate, gridSize,
@@ -39,7 +40,7 @@ export default function BioLogicMouse() {
   }, [scale, treatment, tempo, controlMode, mutationRate, gridSize, loopLock, loopSteps])
 
   const { isPlaying, togglePlay, centroid } = useSequencer(
-    mutableGridRef, settingsRef, manualMouseRef, travelerRef, setGrid,
+    mutableGridRef, settingsRef, manualMouseRef, travelerRef, lorenzRef, setGrid,
   )
 
   const { handleMouseDown, handleMouseEnter, handleMouseLeave } = useGridInteraction(

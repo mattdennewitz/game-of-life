@@ -1,5 +1,5 @@
 import { type MouseEvent } from 'react'
-import { Cpu, Hand, Compass } from 'lucide-react'
+import { Cpu, Hand, Compass, Orbit } from 'lucide-react'
 
 interface GridProps {
   grid: number[][]
@@ -24,18 +24,18 @@ export default function Grid({
         {/* Crosshair overlay */}
         <div className="absolute inset-0 pointer-events-none z-20 overflow-hidden">
           <div
-            className={`absolute w-full h-[1px] transition-all duration-75 ease-linear ${controlMode === 'manual' ? 'bg-indigo-400 shadow-[0_0_20px_rgba(129,140,248,0.7)]' : controlMode === 'traveler' ? 'bg-amber-400 shadow-[0_0_20px_rgba(251,191,36,0.7)]' : 'bg-foreground/30 shadow-[0_0_15px_rgba(128,128,128,0.3)]'}`}
+            className={`absolute w-full h-[1px] transition-all duration-75 ease-linear ${controlMode === 'manual' ? 'bg-indigo-400 shadow-[0_0_20px_rgba(129,140,248,0.7)]' : controlMode === 'traveler' ? 'bg-amber-400 shadow-[0_0_20px_rgba(251,191,36,0.7)]' : controlMode === 'lorenz' ? 'bg-rose-400 shadow-[0_0_20px_rgba(251,113,133,0.7)]' : 'bg-foreground/30 shadow-[0_0_15px_rgba(128,128,128,0.3)]'}`}
             style={{ top: `${(centroid.y / gridSize) * 100}%` }}
           />
           <div
-            className={`absolute h-full w-[1px] transition-all duration-75 ease-linear ${controlMode === 'manual' ? 'bg-indigo-400 shadow-[0_0_20px_rgba(129,140,248,0.7)]' : controlMode === 'traveler' ? 'bg-amber-400 shadow-[0_0_20px_rgba(251,191,36,0.7)]' : 'bg-foreground/30 shadow-[0_0_15px_rgba(128,128,128,0.3)]'}`}
+            className={`absolute h-full w-[1px] transition-all duration-75 ease-linear ${controlMode === 'manual' ? 'bg-indigo-400 shadow-[0_0_20px_rgba(129,140,248,0.7)]' : controlMode === 'traveler' ? 'bg-amber-400 shadow-[0_0_20px_rgba(251,191,36,0.7)]' : controlMode === 'lorenz' ? 'bg-rose-400 shadow-[0_0_20px_rgba(251,113,133,0.7)]' : 'bg-foreground/30 shadow-[0_0_15px_rgba(128,128,128,0.3)]'}`}
             style={{ left: `${(centroid.x / gridSize) * 100}%` }}
           />
           <div
-            className={`absolute w-10 h-10 border-2 rounded-full -translate-x-1/2 -translate-y-1/2 transition-all duration-75 ease-linear flex items-center justify-center ${controlMode === 'manual' ? 'border-indigo-400 scale-125' : controlMode === 'traveler' ? 'border-amber-400 scale-110' : 'border-foreground/40'}`}
+            className={`absolute w-10 h-10 border-2 rounded-full -translate-x-1/2 -translate-y-1/2 transition-all duration-75 ease-linear flex items-center justify-center ${controlMode === 'manual' ? 'border-indigo-400 scale-125' : controlMode === 'traveler' ? 'border-amber-400 scale-110' : controlMode === 'lorenz' ? 'border-rose-400 scale-110' : 'border-foreground/40'}`}
             style={{ top: `${(centroid.y / gridSize) * 100}%`, left: `${(centroid.x / gridSize) * 100}%` }}
           >
-            <div className={`w-2 h-2 rounded-full animate-ping ${controlMode === 'manual' ? 'bg-indigo-400' : controlMode === 'traveler' ? 'bg-amber-400' : 'bg-foreground/50'}`} />
+            <div className={`w-2 h-2 rounded-full animate-ping ${controlMode === 'manual' ? 'bg-indigo-400' : controlMode === 'traveler' ? 'bg-amber-400' : controlMode === 'lorenz' ? 'bg-rose-400' : 'bg-foreground/50'}`} />
           </div>
         </div>
 
@@ -71,6 +71,8 @@ export default function Grid({
           <><Cpu size={14} /> Centroid Dynamics</>
         ) : controlMode === 'traveler' ? (
           <><Compass size={14} className="text-amber-500" /> Wandering Traveler</>
+        ) : controlMode === 'lorenz' ? (
+          <><Orbit size={14} className="text-rose-500" /> Lorenz Attractor</>
         ) : (
           <><Hand size={14} className="text-indigo-500" /> Manual Coordinate Input</>
         )}

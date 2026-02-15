@@ -3,6 +3,36 @@ import { AudioEngine } from '@/audio/engine'
 import { calculateNotes } from '@/audio/notes'
 import { getNextGeneration } from '@/simulation/game-of-life'
 
+export interface LorenzState {
+  x: number
+  y: number
+  z: number
+  gridX: number
+  gridY: number
+}
+
+function updateLorenz(lorenzRef: MutableRefObject<LorenzState>, gridSize: number) {
+  const s = lorenzRef.current
+  const sigma = 10
+  const rho = 28
+  const beta = 8 / 3
+  const dt = 0.005
+  const subSteps = 3
+
+  for (let i = 0; i < subSteps; i++) {
+    const dx = sigma * (s.y - s.x)
+    const dy = s.x * (rho - s.z) - s.y
+    const dz = s.x * s.y - beta * s.z
+    s.x += dx * dt
+    s.y += dy * dt
+    s.z += dz * dt
+  }
+
+  // Map Lorenz x ∈ ~[-20,20] and y ∈ ~[-25,25] to [0, gridSize)
+  s.gridX = Math.max(0, Math.min(gridSize - 0.01, ((s.x + 20) / 40) * gridSize))
+  s.gridY = Math.max(0, Math.min(gridSize - 0.01, ((s.y + 25) / 50) * gridSize))
+}
+
 export interface SequencerSettings {
   scale: string
   treatment: string
@@ -82,6 +112,7 @@ export function useSequencer(
   settingsRef: MutableRefObject<SequencerSettings>,
   manualMouseRef: MutableRefObject<{ x: number; y: number }>,
   travelerRef: MutableRefObject<{ x: number; y: number; vx: number; vy: number }>,
+  lorenzRef: MutableRefObject<LorenzState>,
   setGrid: (g: number[][]) => void,
 ) {
   const [isPlaying, setIsPlaying] = useState(false)
@@ -122,6 +153,8 @@ export function useSequencer(
 
         if (controlMode === 'traveler') {
           updateTraveler(travelerRef, mutableGridRef.current, gridSize)
+        } else if (controlMode === 'lorenz') {
+          updateLorenz(lorenzRef, gridSize)
         }
       }
 
@@ -140,6 +173,7 @@ export function useSequencer(
           manualMouseRef.current,
           scale,
           travelerRef.current,
+          lorenzRef.current,
         )
         notes = live.notes
         pos = live.pos
@@ -177,7 +211,7 @@ export function useSequencer(
     }
 
     timerRef.current = setTimeout(scheduleNextStep, 25)
-  }, [mutableGridRef, settingsRef, manualMouseRef, travelerRef, setGrid])
+  }, [mutableGridRef, settingsRef, manualMouseRef, travelerRef, lorenzRef, setGrid])
 
   const togglePlay = useCallback(() => {
     const engine = engineRef.current
