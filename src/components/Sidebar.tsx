@@ -6,12 +6,12 @@ import { Button } from '@/components/ui/button'
 import { Slider } from '@/components/ui/slider'
 import { Input } from '@/components/ui/input'
 import {
-  Drawer,
-  DrawerContent,
-  DrawerHeader,
-  DrawerTitle,
-  DrawerDescription,
-} from '@/components/ui/drawer'
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
+} from '@/components/ui/sheet'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
 import {
   Select,
@@ -106,12 +106,12 @@ export default function AppSidebar({
   }
 
   return (
-    <Drawer direction="left" open={open} onOpenChange={onOpenChange}>
-      <DrawerContent className="h-full w-80 sm:max-w-sm">
-        <DrawerHeader>
-          <DrawerTitle>Settings</DrawerTitle>
-          <DrawerDescription className="sr-only">Application settings</DrawerDescription>
-        </DrawerHeader>
+    <Sheet open={open} onOpenChange={onOpenChange}>
+      <SheetContent side="left" showCloseButton={false} className="w-80 sm:max-w-sm p-0">
+        <SheetHeader className="p-4 pb-0">
+          <SheetTitle>Settings</SheetTitle>
+          <SheetDescription className="sr-only">Application settings</SheetDescription>
+        </SheetHeader>
 
         <div className="flex-1 overflow-y-auto px-4 pb-4 space-y-4">
           {/* Crosshair Mode */}
@@ -330,7 +330,7 @@ export default function AppSidebar({
             </Button>
           </div>
         </div>
-      </DrawerContent>
-    </Drawer>
+      </SheetContent>
+    </Sheet>
   )
 }
