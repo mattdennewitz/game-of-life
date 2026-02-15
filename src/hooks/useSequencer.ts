@@ -129,15 +129,17 @@ export function useSequencer(
 
       if (notes.length > 0) {
         if (treatment === 'chord') {
-          notes.forEach((f, i) =>
-            engine.playNote(f, time, secondsPerBeat * 2, 'triangle', 0.15 - i * 0.02),
+          const vol = Math.min(0.15, 0.4 / notes.length)
+          notes.forEach((f) =>
+            engine.playNote(f, time, secondsPerBeat * 2, 'triangle', vol),
           )
         } else if (treatment === 'line') {
           const note = notes[stepRef.current % notes.length]
           engine.playNote(note, time, secondsPerBeat * 3, 'sine', 0.2)
         } else if (treatment === 'arpeggio') {
           const arpPattern = [3, 2, 1, 0, 1, 2]
-          const note = notes[arpPattern[stepRef.current % arpPattern.length]]
+          const idx = arpPattern[stepRef.current % arpPattern.length] % notes.length
+          const note = notes[idx]
           engine.playNote(note, time, secondsPerBeat * 2, 'sine', 0.2)
         }
       }

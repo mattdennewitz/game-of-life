@@ -5,6 +5,10 @@ export const SCALES: Record<string, number[]> = {
   dorian: [0, 2, 3, 5, 7, 9, 10],
 }
 
+const BASE_OCTAVE = 3
+const NUM_OCTAVES = 3
+const MAX_NOTES = 8
+
 export function calculateNotes(
   currentGrid: number[][],
   size: number,
@@ -46,20 +50,40 @@ export function calculateNotes(
     }
   }
 
+  // Scan a 3-column window around the crosshair
+  const centerCol = Math.round(targetX)
   const currentScale = SCALES[scaleKey]
-  const scaleDegree = targetX / size
-  const scaleIndex = Math.floor(scaleDegree * currentScale.length * 2)
-  const baseOctave = Math.floor((1 - targetY / size) * 5) + 1
+  const scaleLen = currentScale.length
 
-  const midiNotes = [
-    currentScale[scaleIndex % currentScale.length] + baseOctave * 12,
-    currentScale[(scaleIndex + 2) % currentScale.length] + baseOctave * 12,
-    currentScale[(scaleIndex + 4) % currentScale.length] + (baseOctave + 1) * 12,
-    currentScale[(scaleIndex + 1) % currentScale.length] + (baseOctave - 1) * 12,
-  ]
+  const seen = new Set<number>()
+  const notes: { freq: number; vol: number }[] = []
+
+  for (let dc = -1; dc <= 1; dc++) {
+    const col = ((centerCol + dc) % size + size) % size
+    const vol = dc === 0 ? 1.0 : 0.6
+
+    for (let row = 0; row < size; row++) {
+      if (currentGrid[row][col] !== 1) continue
+
+      const noteIndex = Math.floor((1 - row / size) * scaleLen * NUM_OCTAVES)
+      const octave = BASE_OCTAVE + Math.floor(noteIndex / scaleLen)
+      const degree = ((noteIndex % scaleLen) + scaleLen) % scaleLen
+      const midi = currentScale[degree] + octave * 12
+
+      if (seen.has(midi)) continue
+      seen.add(midi)
+      notes.push({ freq: Math.pow(2, (midi - 69) / 12) * 440, vol })
+    }
+  }
+
+  // Sort high to low (top of grid = high pitch)
+  notes.sort((a, b) => b.freq - a.freq)
+
+  // Cap at MAX_NOTES
+  const capped = notes.slice(0, MAX_NOTES)
 
   return {
-    notes: midiNotes.map((n) => Math.pow(2, (n - 69) / 12) * 440),
+    notes: capped.map((n) => n.freq),
     pos: { x: targetX, y: targetY },
   }
 }
