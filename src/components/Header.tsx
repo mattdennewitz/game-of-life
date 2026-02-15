@@ -1,4 +1,4 @@
-import { Play, Square, Music, Cpu, Hand } from 'lucide-react'
+import { Play, Square, Music, Cpu, Hand, Compass } from 'lucide-react'
 
 interface HeaderProps {
   isPlaying: boolean
@@ -26,16 +26,22 @@ export default function Header({ isPlaying, controlMode, onTogglePlay, onSetCont
       <div className="flex items-center gap-4">
         <div className="flex bg-zinc-900 rounded-full p-1 border border-white/10 mr-4 shadow-inner">
           <button
-            onClick={() => onSetControlMode('auto')}
-            className={`flex items-center gap-2 px-5 py-2 rounded-full text-[10px] font-black uppercase tracking-widest transition-all ${controlMode === 'auto' ? 'bg-white text-black shadow-lg' : 'text-zinc-500 hover:text-zinc-300'}`}
+            onClick={() => onSetControlMode('centroid')}
+            className={`flex items-center gap-2 px-5 py-2 rounded-full text-[10px] font-black uppercase tracking-widest transition-all ${controlMode === 'centroid' ? 'bg-white text-black shadow-lg' : 'text-zinc-500 hover:text-zinc-300'}`}
           >
-            <Cpu size={14} /> Auto
+            <Cpu size={14} /> Centroid
           </button>
           <button
             onClick={() => onSetControlMode('manual')}
             className={`flex items-center gap-2 px-5 py-2 rounded-full text-[10px] font-black uppercase tracking-widest transition-all ${controlMode === 'manual' ? 'bg-white text-black shadow-lg' : 'text-zinc-500 hover:text-zinc-300'}`}
           >
             <Hand size={14} /> Manual
+          </button>
+          <button
+            onClick={() => onSetControlMode('traveler')}
+            className={`flex items-center gap-2 px-5 py-2 rounded-full text-[10px] font-black uppercase tracking-widest transition-all ${controlMode === 'traveler' ? 'bg-white text-black shadow-lg' : 'text-zinc-500 hover:text-zinc-300'}`}
+          >
+            <Compass size={14} /> Traveler
           </button>
         </div>
 

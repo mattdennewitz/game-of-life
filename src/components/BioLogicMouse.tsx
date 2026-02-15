@@ -13,12 +13,13 @@ export default function BioLogicMouse() {
   const [tempo, setTempo] = useState(120)
   const [scale, setScale] = useState('pentatonic')
   const [treatment, setTreatment] = useState('arpeggio')
-  const [controlMode, setControlMode] = useState('auto')
+  const [controlMode, setControlMode] = useState('centroid')
   const [mutationRate, setMutationRate] = useState(0.001)
   const [seed, setSeed] = useState('bio-mouse')
 
   const mutableGridRef = useRef(grid)
   const manualMouseRef = useRef({ x: 16, y: 16 })
+  const travelerRef = useRef({ x: 16, y: 16, vx: 0.3, vy: 0.3 })
   const settingsRef = useRef<SequencerSettings>({
     scale, treatment, tempo,
     controlMode, mutationRate, gridSize,
@@ -33,7 +34,7 @@ export default function BioLogicMouse() {
   }, [scale, treatment, tempo, controlMode, mutationRate, gridSize])
 
   const { isPlaying, togglePlay, centroid } = useSequencer(
-    mutableGridRef, settingsRef, manualMouseRef, setGrid,
+    mutableGridRef, settingsRef, manualMouseRef, travelerRef, setGrid,
   )
 
   const { handleMouseDown, handleMouseEnter, handleMouseLeave } = useGridInteraction(

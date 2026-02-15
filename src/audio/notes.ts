@@ -11,6 +11,7 @@ export function calculateNotes(
   controlMode: string,
   manualPos: { x: number; y: number },
   scaleKey: string,
+  travelerPos: { x: number; y: number } = { x: 16, y: 16 },
 ): { notes: number[]; pos: { x: number; y: number } } {
   let targetX: number
   let targetY: number
@@ -18,6 +19,9 @@ export function calculateNotes(
   if (controlMode === 'manual') {
     targetX = manualPos.x
     targetY = manualPos.y
+  } else if (controlMode === 'traveler') {
+    targetX = travelerPos.x
+    targetY = travelerPos.y
   } else {
     let sumX = 0
     let sumY = 0
