@@ -8,7 +8,7 @@ import AppSidebar from './Sidebar'
 import Grid from './Grid'
 import Footer from './Footer'
 
-export default function BioLogicMouse() {
+export default function Dennewitz() {
   const [gridSize, setGridSize] = useState(32)
   const [grid, setGrid] = useState<number[][]>(() => Array(32).fill(null).map(() => Array(32).fill(0)))
   const [tempo, setTempo] = useState(120)
@@ -18,7 +18,7 @@ export default function BioLogicMouse() {
   const [mutationRate, setMutationRate] = useState(0.001)
   const [loopLock, setLoopLock] = useState(false)
   const [loopSteps, setLoopSteps] = useState(16)
-  const [seed, setSeed] = useState('bio-mouse')
+  const [seed, setSeed] = useState('dennewitz')
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
   const mutableGridRef = useRef(grid)
@@ -101,7 +101,7 @@ export default function BioLogicMouse() {
 
   // Initialize on mount
   useEffect(() => {
-    randomizeGrid('bio-mouse', 32)
+    randomizeGrid('dennewitz', 32)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 

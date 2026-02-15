@@ -1,5 +1,5 @@
-import BioLogicMouse from '@/components/BioLogicMouse'
+import Dennewitz from '@/components/Dennewitz'
 
 export default function App() {
-  return <BioLogicMouse />
+  return <Dennewitz />
 }
