@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback, type MouseEvent } from 'react'
 import { useSequencer, type SequencerSettings, type LorenzState } from '@/hooks/useSequencer'
 import { useGridInteraction } from '@/hooks/useGridInteraction'
+import { useMidi } from '@/hooks/useMidi'
 import { createRandomGrid } from '@/simulation/random'
 import Header from './Header'
 import AppSidebar from './Sidebar'
@@ -39,8 +40,11 @@ export default function BioLogicMouse() {
     }
   }, [scale, treatment, tempo, controlMode, mutationRate, gridSize, loopLock, loopSteps])
 
-  const { isPlaying, togglePlay, centroid } = useSequencer(
+  const midi = useMidi()
+
+  const { isPlaying, togglePlay, centroid, engineRef } = useSequencer(
     mutableGridRef, settingsRef, manualMouseRef, travelerRef, lorenzRef, setGrid,
+    midi.midiOutputRef, midi.midiRecorderRef,
   )
 
   const { handleMouseDown, handleMouseEnter, handleMouseLeave } = useGridInteraction(
@@ -74,6 +78,27 @@ export default function BioLogicMouse() {
     manualMouseRef.current = { x, y }
   }, [gridSize])
 
+  const handleToggleRecording = useCallback(() => {
+    const ctx = engineRef.current?.ctx
+    if (ctx) midi.toggleRecording(ctx.currentTime)
+  }, [engineRef, midi])
+
+  // Keyboard shortcuts (skip when typing in inputs)
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return
+      if (e.key === ' ') {
+        e.preventDefault()
+        togglePlay()
+      } else if (e.shiftKey && e.key === 'R') {
+        e.preventDefault()
+        handleToggleRecording()
+      }
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [togglePlay, handleToggleRecording])
+
   // Initialize on mount
   useEffect(() => {
     randomizeGrid('bio-mouse', 32)
@@ -84,6 +109,7 @@ export default function BioLogicMouse() {
     <div className="min-h-screen flex flex-col w-full select-none overflow-hidden">
       <Header
         isPlaying={isPlaying}
+        isRecording={midi.isRecording}
         onTogglePlay={togglePlay}
         onToggleSidebar={() => setSidebarOpen(o => !o)}
       />
@@ -111,6 +137,16 @@ export default function BioLogicMouse() {
         onSetLoopLock={setLoopLock}
         onSetLoopSteps={setLoopSteps}
         onClear={clearGrid}
+        midiSupported={midi.midiSupported}
+        midiEnabled={midi.midiEnabled}
+        onSetMidiEnabled={midi.setMidiEnabled}
+        midiOutputs={midi.outputs}
+        selectedMidiOutput={midi.selectedOutputId}
+        onSetSelectedMidiOutput={midi.setSelectedOutputId}
+        isRecording={midi.isRecording}
+        onToggleRecording={handleToggleRecording}
+        hasRecordedEvents={midi.hasRecordedEvents}
+        onDownloadMidi={() => midi.downloadRecording(tempo)}
       />
 
       <main className="flex-1 flex flex-col p-4 overflow-hidden">

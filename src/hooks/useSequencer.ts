@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, useCallback, type MutableRefObject } from 
 import { AudioEngine } from '@/audio/engine'
 import { calculateNotes } from '@/audio/notes'
 import { getNextGeneration } from '@/simulation/game-of-life'
+import type { MidiOutput, MidiRecorder } from '@/audio/midi'
 
 export interface LorenzState {
   x: number
@@ -114,6 +115,8 @@ export function useSequencer(
   travelerRef: MutableRefObject<{ x: number; y: number; vx: number; vy: number }>,
   lorenzRef: MutableRefObject<LorenzState>,
   setGrid: (g: number[][]) => void,
+  midiOutputRef?: MutableRefObject<MidiOutput>,
+  midiRecorderRef?: MutableRefObject<MidiRecorder>,
 ) {
   const [isPlaying, setIsPlaying] = useState(false)
   const [centroid, setCentroid] = useState({ x: 16, y: 16 })
@@ -192,17 +195,24 @@ export function useSequencer(
       if (notes.length > 0) {
         if (treatment === 'chord') {
           const vol = Math.min(0.15, 0.4 / notes.length)
-          notes.forEach((f) =>
-            engine.playNote(f, time, secondsPerBeat * 2, 'triangle', vol),
-          )
+          const velocity = Math.round(Math.min(127, vol / 0.2 * 100))
+          notes.forEach((f) => {
+            engine.playNote(f, time, secondsPerBeat * 2, 'triangle', vol)
+            midiOutputRef?.current.sendNote(f, time, secondsPerBeat * 2, velocity, engine.ctx.currentTime)
+            if (midiRecorderRef?.current.isActive()) midiRecorderRef.current.recordNote(f, time, secondsPerBeat * 2, velocity)
+          })
         } else if (treatment === 'line') {
           const note = notes[stepRef.current % notes.length]
           engine.playNote(note, time, secondsPerBeat * 3, 'sine', 0.2)
+          midiOutputRef?.current.sendNote(note, time, secondsPerBeat * 3, 100, engine.ctx.currentTime)
+          if (midiRecorderRef?.current.isActive()) midiRecorderRef.current.recordNote(note, time, secondsPerBeat * 3, 100)
         } else if (treatment === 'arpeggio') {
           const arpPattern = [3, 2, 1, 0, 1, 2]
           const idx = arpPattern[stepRef.current % arpPattern.length] % notes.length
           const note = notes[idx]
           engine.playNote(note, time, secondsPerBeat * 2, 'sine', 0.2)
+          midiOutputRef?.current.sendNote(note, time, secondsPerBeat * 2, 100, engine.ctx.currentTime)
+          if (midiRecorderRef?.current.isActive()) midiRecorderRef.current.recordNote(note, time, secondsPerBeat * 2, 100)
         }
       }
 
@@ -211,7 +221,7 @@ export function useSequencer(
     }
 
     timerRef.current = setTimeout(scheduleNextStep, 25)
-  }, [mutableGridRef, settingsRef, manualMouseRef, travelerRef, lorenzRef, setGrid])
+  }, [mutableGridRef, settingsRef, manualMouseRef, travelerRef, lorenzRef, setGrid, midiOutputRef, midiRecorderRef])
 
   const togglePlay = useCallback(() => {
     const engine = engineRef.current
@@ -227,5 +237,5 @@ export function useSequencer(
     setIsPlaying(!isPlaying)
   }, [isPlaying, scheduleNextStep])
 
-  return { isPlaying, togglePlay, centroid }
+  return { isPlaying, togglePlay, centroid, engineRef }
 }

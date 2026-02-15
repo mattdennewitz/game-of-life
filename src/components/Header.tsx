@@ -4,11 +4,12 @@ import { Button } from '@/components/ui/button'
 
 interface HeaderProps {
   isPlaying: boolean
+  isRecording?: boolean
   onTogglePlay: () => void
   onToggleSidebar: () => void
 }
 
-export default function Header({ isPlaying, onTogglePlay, onToggleSidebar }: HeaderProps) {
+export default function Header({ isPlaying, isRecording, onTogglePlay, onToggleSidebar }: HeaderProps) {
   const [dark, setDark] = useState(() => document.documentElement.classList.contains('dark'))
 
   useEffect(() => {
@@ -45,6 +46,13 @@ export default function Header({ isPlaying, onTogglePlay, onToggleSidebar }: Hea
       </div>
 
       <div className="flex items-center gap-2">
+        {isRecording && (
+          <span className="flex items-center gap-1.5 text-xs font-medium text-red-600 dark:text-red-400">
+            <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+            REC
+          </span>
+        )}
+
         <Button variant="ghost" size="icon" onClick={toggleDark} className="rounded-full">
           {dark ? <Sun size={18} /> : <Moon size={18} />}
         </Button>

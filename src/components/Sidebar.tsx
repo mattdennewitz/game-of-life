@@ -1,5 +1,5 @@
 import { useState, useEffect, type KeyboardEvent } from 'react'
-import { Dice5, Trash2, Sparkles, Grid3X3, Repeat, Cpu, ChevronDown } from 'lucide-react'
+import { Dice5, Trash2, Sparkles, Grid3X3, Repeat, Cpu, ChevronDown, Music, Circle, Download } from 'lucide-react'
 import { SCALE_INFO } from '@/audio/notes'
 import { GRID_OPTIONS } from '@/simulation/constants'
 import { Button } from '@/components/ui/button'
@@ -44,6 +44,16 @@ interface SidebarProps {
   onSetLoopLock: (on: boolean) => void
   onSetLoopSteps: (steps: number) => void
   onClear: () => void
+  midiSupported: boolean
+  midiEnabled: boolean
+  onSetMidiEnabled: (on: boolean) => void
+  midiOutputs: MIDIOutput[]
+  selectedMidiOutput: string
+  onSetSelectedMidiOutput: (id: string) => void
+  isRecording: boolean
+  onToggleRecording: () => void
+  hasRecordedEvents: boolean
+  onDownloadMidi: () => void
 }
 
 function Section({ label, icon, children, defaultOpen = true }: {
@@ -73,6 +83,8 @@ export default function AppSidebar({
   gridSize, seed, mutationRate, tempo, scale, treatment, controlMode,
   onChangeGridSize, onSetSeed, onRandomize, onSetMutationRate, onSetTempo,
   onSetScale, onSetTreatment, onSetControlMode, loopLock, loopSteps, onSetLoopLock, onSetLoopSteps, onClear,
+  midiSupported, midiEnabled, onSetMidiEnabled, midiOutputs, selectedMidiOutput, onSetSelectedMidiOutput,
+  isRecording, onToggleRecording, hasRecordedEvents, onDownloadMidi,
 }: SidebarProps) {
   const [loopInput, setLoopInput] = useState(String(loopSteps))
 
@@ -215,6 +227,61 @@ export default function AppSidebar({
                 ))}
               </SelectContent>
             </Select>
+          </Section>
+
+          {/* MIDI */}
+          <Section label="MIDI" icon={<Music size={14} />}>
+            {!midiSupported ? (
+              <p className="text-xs text-muted-foreground">Not supported in this browser</p>
+            ) : (
+              <div className="space-y-3">
+                <Button
+                  variant={midiEnabled ? 'default' : 'outline'}
+                  size="sm"
+                  className="w-full"
+                  onClick={() => onSetMidiEnabled(!midiEnabled)}
+                >
+                  {midiEnabled ? 'Enabled' : 'Disabled'}
+                </Button>
+
+                <Select
+                  value={selectedMidiOutput}
+                  onValueChange={onSetSelectedMidiOutput}
+                  disabled={!midiEnabled}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder={midiOutputs.length === 0 ? 'No ports' : 'Select output'} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {midiOutputs.map((port) => (
+                      <SelectItem key={port.id} value={port.id} label={port.name || port.id} />
+                    ))}
+                  </SelectContent>
+                </Select>
+
+                <div className="flex gap-2">
+                  <Button
+                    variant={isRecording ? 'destructive' : 'outline'}
+                    size="sm"
+                    className="flex-1 gap-1.5"
+                    onClick={onToggleRecording}
+                  >
+                    <Circle size={12} fill={isRecording ? 'currentColor' : 'none'} />
+                    {isRecording ? 'Stop' : 'Record'}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="flex-1 gap-1.5"
+                    disabled={!hasRecordedEvents}
+                    onClick={onDownloadMidi}
+                  >
+                    <Download size={12} />
+                    .mid
+                  </Button>
+                </div>
+              </div>
+            )}
           </Section>
 
           {/* Loop Lock */}
