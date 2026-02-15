@@ -70,7 +70,7 @@ export default function Grid({
         {controlMode === 'centroid' ? (
           <><Cpu size={14} /> Centroid Dynamics</>
         ) : controlMode === 'traveler' ? (
-          <><Compass size={14} className="text-amber-500" /> Wandering Traveler</>
+          <><Compass size={14} className="text-amber-500" /> Grey Pilgrim</>
         ) : controlMode === 'lorenz' ? (
           <><Orbit size={14} className="text-rose-500" /> Lorenz Attractor</>
         ) : (

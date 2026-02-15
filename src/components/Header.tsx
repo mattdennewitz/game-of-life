@@ -36,7 +36,7 @@ export default function Header({ isPlaying, onTogglePlay, onToggleSidebar }: Hea
           <Music className="text-background" size={18} strokeWidth={2.5} />
         </div>
         <div>
-          <h1 className="text-lg font-bold tracking-tight leading-none">Bio-Logic Mouse</h1>
+          <h1 className="text-lg font-bold tracking-tight leading-none">Dennewitz's Game of Life</h1>
           <div className="flex items-center gap-1.5 mt-0.5">
             <span className={`w-1.5 h-1.5 rounded-full ${isPlaying ? 'bg-emerald-500 animate-pulse' : 'bg-muted-foreground/30'}`} />
             <p className="text-xs text-muted-foreground">v3.5</p>
