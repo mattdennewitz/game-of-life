@@ -4,7 +4,7 @@ A musical cellular automaton that sonifies Conway's Game of Life in real time. A
 
 ## Features
 
-- Canvas-rendered Game of Life on a toroidal grid (32, 64, or 128 cells)
+- Canvas-rendered Game of Life on a toroidal grid (32, 64, or 128 cells; default 64x64)
 - 4 control modes for the scan crosshair: Centroid, Manual, Grey Pilgrim, Lorenz Attractor
 - 7 scale systems: Diatonic, Pentatonic, Chromatic, Dorian, Just Simple, Just Extended, Quarter-tone (24-EDO)
 - 3 voice treatments: Chord, Line, Arpeggio
@@ -68,6 +68,7 @@ Performance-critical state (grid array, live cell set, settings, positions) is s
 |-----|--------|
 | Space | Play / Pause |
 | Shift+R | Toggle MIDI recording |
+| Shift+L | Toggle loop lock |
 
 ## Tech Stack
 

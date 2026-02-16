@@ -20,9 +20,9 @@ src/
 ├── components/
 │   ├── Dennewitz.tsx       # Root component — all state lives here
 │   ├── Grid.tsx            # Dual-canvas renderer (grid + crosshair overlay)
-│   ├── Header.tsx          # Play/pause, record, sidebar toggle
+│   ├── Header.tsx          # Play/pause, recording controls, loop lock, sidebar toggle
 │   ├── Sidebar.tsx         # Settings sheet (scale, tempo, mode, MIDI, etc.)
-│   ├── Footer.tsx          # Status bar
+│   ├── Footer.tsx          # Status bar (engine, resolution, entropy, BPM, harmony, voice, dynamics)
 │   └── ui/                 # shadcn/ui primitives — do not edit directly
 ├── hooks/
 │   ├── useSequencer.ts     # Main loop: scheduling, grid evolution, note triggering, Lorenz/traveler updates
@@ -31,7 +31,7 @@ src/
 ├── simulation/
 │   ├── game-of-life.ts     # getNextGeneration() — Conway rules + mutation on toroidal grid
 │   ├── random.ts           # sfc32 PRNG, seedFromString(), createRandomGrid() (18% density)
-│   └── constants.ts        # GRID_OPTIONS [32, 64, 128]
+│   └── constants.ts        # GRID_OPTIONS [32, 64, 128], LOOP_STEP_PRESETS [3, 4, 5, 8, 16, 32, 64]
 ├── audio/
 │   ├── engine.ts           # AudioEngine — oscillator → gain envelope → master gain
 │   ├── notes.ts            # calculateNotes() — 3-column scan, scale quantization, max 8 notes
@@ -55,7 +55,7 @@ src/
 - shadcn/ui style: new-york, with cult-ui registry
 - OKLch color space for CSS theme variables (resolved to rgb via DOM probe for canvas)
 - Tailwind CSS 4 with `@tailwindcss/vite` plugin
-- Grid sizes: 32, 64, 128
+- Grid sizes: 32, 64 (default), 128
 - 7 scales: diatonic, pentatonic, chromatic, dorian, just-simple, just-extended, quarter-tone
 - 4 control modes: centroid, manual, traveler (Grey Pilgrim), lorenz
 - 3 voice treatments: chord, line, arpeggio (pattern [3,2,1,0,1,2])
