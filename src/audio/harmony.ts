@@ -215,16 +215,17 @@ export function chooseMelodicNote(
     return { note, duration: ageToDuration(note.age) }
   }
 
-  // Score each candidate
-  let bestNote = candidates[0]
-  let bestScore = -Infinity
+  // Score each candidate, then weighted-random pick
+  const scored: { note: NoteInfo; score: number }[] = []
 
   for (const c of candidates) {
     const dist = Math.abs(c.midi - state.lastNote)
     let score = 0
 
-    // Prefer stepwise motion (within 4 semitones)
-    if (dist <= 4) {
+    // Prefer stepwise motion (1-4 semitones); penalize repeated pitch
+    if (dist === 0) {
+      score += 1
+    } else if (dist <= 4) {
       score += 10 - dist
     } else if (dist <= 7) {
       score += 3
@@ -248,10 +249,16 @@ export function chooseMelodicNote(
     // Weight by column volume
     score *= c.vol
 
-    if (score > bestScore) {
-      bestScore = score
-      bestNote = c
-    }
+    scored.push({ note: c, score: Math.max(score, 0.1) })
+  }
+
+  // Weighted random selection — scores become probabilities
+  const total = scored.reduce((sum, s) => sum + s.score, 0)
+  let r = Math.random() * total
+  let bestNote = scored[0].note
+  for (const s of scored) {
+    r -= s.score
+    if (r <= 0) { bestNote = s.note; break }
   }
 
   // Update state

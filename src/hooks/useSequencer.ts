@@ -278,10 +278,12 @@ export function useSequencer(
             if (midiRecorderRef?.current.isActive()) midiRecorderRef.current.recordNote(n.freq, time, secondsPerBeat * 2, velocity)
           })
         } else if (treatment === 'line') {
-          const choice = chooseMelodicNote(selected, melodicStateRef.current)
+          // Line mode uses full scan (not consonance-filtered) for melodic range
+          const lineCandidates = scanResult.notes.slice(0, 16)
+          const choice = chooseMelodicNote(lineCandidates, melodicStateRef.current)
           if (choice.note) {
             stepNotes = [choice.note]
-            const dur = secondsPerBeat * 3 * choice.duration
+            const dur = secondsPerBeat * 1.5 * choice.duration
             const vol = dyn.volume * choice.note.vol * 0.2
             const velocity = Math.min(127, dyn.velocity)
             engine.playNote(choice.note.freq, time, dur, 'sine', vol, 0.01)
@@ -289,16 +291,19 @@ export function useSequencer(
             if (midiRecorderRef?.current.isActive()) midiRecorderRef.current.recordNote(choice.note.freq, time, dur, velocity)
           }
         } else if (treatment === 'arpeggio') {
+          // Arpeggio uses full scan for wider pitch range
+          const arpCandidates = scanResult.notes.slice(0, 12)
           const pattern = selectArpPattern(scanResult.density)
-          const idx = pattern[stepRef.current % pattern.length] % selected.length
-          const note = selected[idx]
+          const idx = pattern[stepRef.current % pattern.length] % arpCandidates.length
+          const note = arpCandidates[idx]
           stepNotes = [note]
-          const ageDur = note.age > 3 ? 1.4 : note.age > 1 ? 1.0 : 0.6
+          const ageDur = note.age > 3 ? 1.2 : note.age > 1 ? 1.0 : 0.8
           const vol = dyn.volume * note.vol * 0.2
           const velocity = Math.min(127, dyn.velocity)
-          engine.playNote(note.freq, time, secondsPerBeat * 2 * ageDur, 'sine', vol, 0.01)
-          midiOutputRef?.current.sendNote(note.freq, time, secondsPerBeat * 2 * ageDur, velocity, engine.ctx.currentTime)
-          if (midiRecorderRef?.current.isActive()) midiRecorderRef.current.recordNote(note.freq, time, secondsPerBeat * 2 * ageDur, velocity)
+          const arpDur = secondsPerBeat * 1.2 * ageDur
+          engine.playNote(note.freq, time, arpDur, 'sine', vol, 0.01)
+          midiOutputRef?.current.sendNote(note.freq, time, arpDur, velocity, engine.ctx.currentTime)
+          if (midiRecorderRef?.current.isActive()) midiRecorderRef.current.recordNote(note.freq, time, arpDur, velocity)
         }
       }
 
