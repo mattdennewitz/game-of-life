@@ -39,6 +39,8 @@ interface SidebarProps {
   onSetScale: (scale: string) => void
   onSetTreatment: (treatment: string) => void
   onSetControlMode: (mode: string) => void
+  dynamicSensitivity: number
+  onSetDynamicSensitivity: (v: number) => void
   loopLock: boolean
   loopSteps: number
   onSetLoopLock: (on: boolean) => void
@@ -82,7 +84,7 @@ export default function AppSidebar({
   open, onOpenChange,
   gridSize, seed, mutationRate, tempo, scale, treatment, controlMode,
   onChangeGridSize, onSetSeed, onRandomize, onSetMutationRate, onSetTempo,
-  onSetScale, onSetTreatment, onSetControlMode, loopLock, loopSteps, onSetLoopLock, onSetLoopSteps, onClear,
+  onSetScale, onSetTreatment, onSetControlMode, dynamicSensitivity, onSetDynamicSensitivity, loopLock, loopSteps, onSetLoopLock, onSetLoopSteps, onClear,
   midiSupported, midiEnabled, onSetMidiEnabled, midiOutputs, selectedMidiOutput, onSetSelectedMidiOutput,
   isRecording, onToggleRecording, hasRecordedEvents, onDownloadMidi,
 }: SidebarProps) {
@@ -227,6 +229,21 @@ export default function AppSidebar({
                 ))}
               </SelectContent>
             </Select>
+          </Section>
+
+          {/* Dynamic Sensitivity */}
+          <Section label="Dynamic Sensitivity">
+            <div className="flex justify-between text-xs text-muted-foreground mb-2">
+              <span>Sensitivity</span>
+              <span className="font-mono">{Math.round(dynamicSensitivity * 100)}%</span>
+            </div>
+            <Slider
+              min={0}
+              max={1}
+              step={0.01}
+              value={[dynamicSensitivity]}
+              onValueChange={([v]) => onSetDynamicSensitivity(v)}
+            />
           </Section>
 
           {/* MIDI */}

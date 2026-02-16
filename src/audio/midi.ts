@@ -1,12 +1,39 @@
-export function freqToMidi(freq: number): number {
-  return Math.max(0, Math.min(127, Math.round(12 * Math.log2(freq / 440) + 69)))
+export interface MicrotonalMidi {
+  note: number        // nearest MIDI note (0-127)
+  pitchBend: number   // 14-bit (0-16383, center 8192)
+  centsOff: number    // deviation from 12-TET
 }
+
+export function freqToMicrotonalMidi(freq: number, bendRange = 2): MicrotonalMidi {
+  const exactMidi = 12 * Math.log2(freq / 440) + 69
+  const note = Math.max(0, Math.min(127, Math.round(exactMidi)))
+  const centsOff = (exactMidi - note) * 100
+  // Map cents to 14-bit pitch bend: bendRange semitones = full range
+  const bendPerCent = 8192 / (bendRange * 100)
+  const pitchBend = Math.max(0, Math.min(16383, Math.round(8192 + centsOff * bendPerCent)))
+  return { note, pitchBend, centsOff }
+}
+
+export function freqToMidi(freq: number): number {
+  return freqToMicrotonalMidi(freq).note
+}
+
+const DRUM_CHANNEL = 9
 
 export class MidiOutput {
   private port: MIDIOutput | null = null
+  private nextChannel = 0
 
   setPort(port: MIDIOutput | null) {
     this.port = port
+  }
+
+  private allocateChannel(): number {
+    let ch = this.nextChannel
+    if (ch === DRUM_CHANNEL) ch = (ch + 1) % 16
+    this.nextChannel = (ch + 1) % 16
+    if (this.nextChannel === DRUM_CHANNEL) this.nextChannel = (this.nextChannel + 1) % 16
+    return ch
   }
 
   sendNote(
@@ -17,33 +44,45 @@ export class MidiOutput {
     audioCtxCurrentTime: number,
   ) {
     if (!this.port) return
-    const note = freqToMidi(freq)
+    const micro = freqToMicrotonalMidi(freq)
+    const ch = this.allocateChannel()
     const now = performance.now()
     const offset = (startTime - audioCtxCurrentTime) * 1000
     const onTime = now + offset
     const offTime = onTime + duration * 1000
 
-    this.port.send([0x90, note, velocity], onTime)
-    this.port.send([0x80, note, 0], offTime)
+    // Send pitch bend before note-on if microtonal
+    if (Math.abs(micro.centsOff) > 0.5) {
+      const lsb = micro.pitchBend & 0x7f
+      const msb = (micro.pitchBend >> 7) & 0x7f
+      this.port.send([0xe0 | ch, lsb, msb], onTime - 1)
+    }
+
+    this.port.send([0x90 | ch, micro.note, velocity], onTime)
+    this.port.send([0x80 | ch, micro.note, 0], offTime)
   }
 }
 
 interface MidiEvent {
-  type: 'noteOn' | 'noteOff'
+  type: 'noteOn' | 'noteOff' | 'pitchBend'
+  channel: number
   note: number
   velocity: number
-  time: number // seconds relative to start
+  pitchBend: number   // 14-bit, only used for pitchBend type
+  time: number        // seconds relative to start
 }
 
 export class MidiRecorder {
   private events: MidiEvent[] = []
   private startTime = 0
   private active = false
+  private nextChannel = 0
 
   start(audioCtxTime: number) {
     this.events = []
     this.startTime = audioCtxTime
     this.active = true
+    this.nextChannel = 0
   }
 
   stop() {
@@ -54,11 +93,35 @@ export class MidiRecorder {
     return this.active
   }
 
+  private allocateChannel(): number {
+    let ch = this.nextChannel
+    if (ch === DRUM_CHANNEL) ch = (ch + 1) % 16
+    this.nextChannel = (ch + 1) % 16
+    if (this.nextChannel === DRUM_CHANNEL) this.nextChannel = (this.nextChannel + 1) % 16
+    return ch
+  }
+
   recordNote(freq: number, time: number, duration: number, velocity: number) {
-    const note = freqToMidi(freq)
+    const micro = freqToMicrotonalMidi(freq)
+    const ch = this.allocateChannel()
     const rel = time - this.startTime
-    this.events.push({ type: 'noteOn', note, velocity, time: rel })
-    this.events.push({ type: 'noteOff', note, velocity: 0, time: rel + duration })
+
+    // Emit pitch bend before note-on when microtonal
+    if (Math.abs(micro.centsOff) > 0.5) {
+      this.events.push({
+        type: 'pitchBend', channel: ch,
+        note: 0, velocity: 0, pitchBend: micro.pitchBend, time: rel,
+      })
+    }
+
+    this.events.push({
+      type: 'noteOn', channel: ch,
+      note: micro.note, velocity, pitchBend: 0, time: rel,
+    })
+    this.events.push({
+      type: 'noteOff', channel: ch,
+      note: micro.note, velocity: 0, pitchBend: 0, time: rel + duration,
+    })
   }
 
   hasEvents(): boolean {
@@ -69,7 +132,11 @@ export class MidiRecorder {
     const ppqn = 480
     const usPerBeat = Math.round(60_000_000 / tempo)
 
-    const sorted = [...this.events].sort((a, b) => a.time - b.time || (a.type === 'noteOff' ? -1 : 1))
+    // Sort: by time, then pitchBend → noteOff → noteOn
+    const ORDER: Record<string, number> = { pitchBend: 0, noteOff: 1, noteOn: 2 }
+    const sorted = [...this.events].sort((a, b) =>
+      a.time - b.time || (ORDER[a.type] ?? 2) - (ORDER[b.type] ?? 2)
+    )
 
     // Build track data
     const trackBytes: number[] = []
@@ -78,6 +145,16 @@ export class MidiRecorder {
     trackBytes.push(0x00, 0xff, 0x51, 0x03)
     trackBytes.push((usPerBeat >> 16) & 0xff, (usPerBeat >> 8) & 0xff, usPerBeat & 0xff)
 
+    // RPN pitch bend range init (2 semitones) for all 16 channels
+    for (let ch = 0; ch < 16; ch++) {
+      // RPN MSB=0, LSB=0 (pitch bend range)
+      trackBytes.push(0x00); trackBytes.push(0xb0 | ch, 101, 0)
+      trackBytes.push(0x00); trackBytes.push(0xb0 | ch, 100, 0)
+      // Data Entry MSB=2 (semitones), LSB=0 (cents)
+      trackBytes.push(0x00); trackBytes.push(0xb0 | ch, 6, 2)
+      trackBytes.push(0x00); trackBytes.push(0xb0 | ch, 38, 0)
+    }
+
     let prevTick = 0
     for (const evt of sorted) {
       const tick = Math.round((evt.time / 60) * tempo * ppqn)
@@ -85,10 +162,14 @@ export class MidiRecorder {
       prevTick = tick
       writeVLQ(trackBytes, delta)
 
-      if (evt.type === 'noteOn') {
-        trackBytes.push(0x90, evt.note, evt.velocity)
+      if (evt.type === 'pitchBend') {
+        const lsb = evt.pitchBend & 0x7f
+        const msb = (evt.pitchBend >> 7) & 0x7f
+        trackBytes.push(0xe0 | evt.channel, lsb, msb)
+      } else if (evt.type === 'noteOn') {
+        trackBytes.push(0x90 | evt.channel, evt.note, evt.velocity)
       } else {
-        trackBytes.push(0x80, evt.note, 0)
+        trackBytes.push(0x80 | evt.channel, evt.note, 0)
       }
     }
 

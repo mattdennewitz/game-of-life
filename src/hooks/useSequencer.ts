@@ -1,6 +1,10 @@
 import { useState, useRef, useEffect, useCallback, type MutableRefObject } from 'react'
 import { AudioEngine } from '@/audio/engine'
-import { calculateNotes } from '@/audio/notes'
+import { calculateNotes, type ScanResult } from '@/audio/notes'
+import {
+  selectByConsonance, voiceChord, chooseMelodicNote, selectArpPattern, computeDynamics,
+  createMelodicState, type MelodicState,
+} from '@/audio/harmony'
 import { getNextGeneration } from '@/simulation/game-of-life'
 import type { MidiOutput, MidiRecorder } from '@/audio/midi'
 
@@ -43,6 +47,7 @@ export interface SequencerSettings {
   gridSize: number
   loopLock: boolean
   loopSteps: number
+  dynamicSensitivity: number
 }
 
 function updateTraveler(
@@ -125,6 +130,7 @@ export function useSequencer(
   travelerRef: MutableRefObject<{ x: number; y: number; vx: number; vy: number }>,
   lorenzRef: MutableRefObject<LorenzState>,
   setGrid: (g: number[][]) => void,
+  ageGridRef: MutableRefObject<number[][]>,
   midiOutputRef?: MutableRefObject<MidiOutput>,
   midiRecorderRef?: MutableRefObject<MidiRecorder>,
 ) {
@@ -135,7 +141,10 @@ export function useSequencer(
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const nextNoteTimeRef = useRef(0)
   const stepRef = useRef(0)
-  const loopBufferRef = useRef<{ notes: number[]; pos: { x: number; y: number } }[]>([])
+  const loopBufferRef = useRef<ScanResult[]>([])
+  const prevChordRef = useRef<number[]>([])
+  const melodicStateRef = useRef<MelodicState>(createMelodicState())
+  const prevDensityRef = useRef<number | null>(null)
 
   useEffect(() => {
     engineRef.current = new AudioEngine()
@@ -148,7 +157,7 @@ export function useSequencer(
     const engine = engineRef.current
     if (!engine) return
 
-    const { tempo, treatment, gridSize, scale, controlMode, mutationRate, loopLock, loopSteps } = settingsRef.current
+    const { tempo, treatment, gridSize, scale, controlMode, mutationRate, loopLock, loopSteps, dynamicSensitivity } = settingsRef.current
     const secondsPerBeat = 60.0 / tempo / 4
 
     while (nextNoteTimeRef.current < engine.ctx.currentTime + 0.1) {
@@ -159,8 +168,9 @@ export function useSequencer(
       // Pause evolution and movement when loop is replaying
       if (!loopFull) {
         if (stepRef.current % 4 === 0) {
-          const nextGrid = getNextGeneration(mutableGridRef.current, gridSize, mutationRate)
+          const { grid: nextGrid, ages } = getNextGeneration(mutableGridRef.current, ageGridRef.current, gridSize, mutationRate)
           mutableGridRef.current = nextGrid
+          ageGridRef.current = ages
           liveCellsRef.current = buildLiveCellsSet(nextGrid, gridSize)
           requestAnimationFrame(() => setGrid(nextGrid))
         }
@@ -172,15 +182,12 @@ export function useSequencer(
         }
       }
 
-      let notes: number[]
-      let pos: { x: number; y: number }
+      let scanResult: ScanResult
 
       if (loopFull) {
-        const entry = loopBufferRef.current[stepRef.current % loopSteps]
-        notes = entry.notes
-        pos = entry.pos
+        scanResult = loopBufferRef.current[stepRef.current % loopSteps]
       } else {
-        const live = calculateNotes(
+        scanResult = calculateNotes(
           mutableGridRef.current,
           gridSize,
           controlMode,
@@ -189,12 +196,11 @@ export function useSequencer(
           travelerRef.current,
           lorenzRef.current,
           liveCellsRef.current,
+          ageGridRef.current,
         )
-        notes = live.notes
-        pos = live.pos
 
         if (loopLock) {
-          loopBufferRef.current.push({ notes, pos })
+          loopBufferRef.current.push(scanResult)
         }
       }
 
@@ -202,29 +208,47 @@ export function useSequencer(
         loopBufferRef.current = []
       }
 
-      requestAnimationFrame(() => setCentroid(pos))
+      requestAnimationFrame(() => setCentroid(scanResult.pos))
 
-      if (notes.length > 0) {
+      // Consonance-based note selection — density controls note count
+      const selected = selectByConsonance(scanResult.notes, 8, scanResult.density)
+
+      // Compute dynamics from density
+      const dyn = computeDynamics(scanResult.density, prevDensityRef.current, stepRef.current, dynamicSensitivity)
+      prevDensityRef.current = scanResult.density
+
+      if (!dyn.rest && selected.length > 0) {
         if (treatment === 'chord') {
-          const vol = Math.min(0.15, 0.4 / notes.length)
-          const velocity = Math.round(Math.min(127, vol / 0.2 * 100))
-          notes.forEach((f) => {
-            engine.playNote(f, time, secondsPerBeat * 2, 'triangle', vol)
-            midiOutputRef?.current.sendNote(f, time, secondsPerBeat * 2, velocity, engine.ctx.currentTime)
-            if (midiRecorderRef?.current.isActive()) midiRecorderRef.current.recordNote(f, time, secondsPerBeat * 2, velocity)
+          const voiced = voiceChord(selected, prevChordRef.current)
+          prevChordRef.current = voiced.notes.map(n => n.midi)
+          voiced.notes.forEach((n) => {
+            const ageFactor = Math.min(1.3, 0.7 + n.age * 0.1)
+            const vol = Math.min(0.15, dyn.volume * n.vol * ageFactor * 0.4 / voiced.notes.length)
+            const velocity = Math.min(127, dyn.velocity)
+            engine.playNote(n.freq, time, secondsPerBeat * 2, 'triangle', vol, 0.02, secondsPerBeat * 0.6)
+            midiOutputRef?.current.sendNote(n.freq, time, secondsPerBeat * 2, velocity, engine.ctx.currentTime)
+            if (midiRecorderRef?.current.isActive()) midiRecorderRef.current.recordNote(n.freq, time, secondsPerBeat * 2, velocity)
           })
         } else if (treatment === 'line') {
-          const note = notes[stepRef.current % notes.length]
-          engine.playNote(note, time, secondsPerBeat * 3, 'sine', 0.2)
-          midiOutputRef?.current.sendNote(note, time, secondsPerBeat * 3, 100, engine.ctx.currentTime)
-          if (midiRecorderRef?.current.isActive()) midiRecorderRef.current.recordNote(note, time, secondsPerBeat * 3, 100)
+          const choice = chooseMelodicNote(selected, melodicStateRef.current)
+          if (choice.note) {
+            const dur = secondsPerBeat * 3 * choice.duration
+            const vol = dyn.volume * choice.note.vol * 0.2
+            const velocity = Math.min(127, dyn.velocity)
+            engine.playNote(choice.note.freq, time, dur, 'sine', vol, 0.01)
+            midiOutputRef?.current.sendNote(choice.note.freq, time, dur, velocity, engine.ctx.currentTime)
+            if (midiRecorderRef?.current.isActive()) midiRecorderRef.current.recordNote(choice.note.freq, time, dur, velocity)
+          }
         } else if (treatment === 'arpeggio') {
-          const arpPattern = [3, 2, 1, 0, 1, 2]
-          const idx = arpPattern[stepRef.current % arpPattern.length] % notes.length
-          const note = notes[idx]
-          engine.playNote(note, time, secondsPerBeat * 2, 'sine', 0.2)
-          midiOutputRef?.current.sendNote(note, time, secondsPerBeat * 2, 100, engine.ctx.currentTime)
-          if (midiRecorderRef?.current.isActive()) midiRecorderRef.current.recordNote(note, time, secondsPerBeat * 2, 100)
+          const pattern = selectArpPattern(scanResult.density)
+          const idx = pattern[stepRef.current % pattern.length] % selected.length
+          const note = selected[idx]
+          const ageDur = note.age > 3 ? 1.4 : note.age > 1 ? 1.0 : 0.6
+          const vol = dyn.volume * note.vol * 0.2
+          const velocity = Math.min(127, dyn.velocity)
+          engine.playNote(note.freq, time, secondsPerBeat * 2 * ageDur, 'sine', vol, 0.01)
+          midiOutputRef?.current.sendNote(note.freq, time, secondsPerBeat * 2 * ageDur, velocity, engine.ctx.currentTime)
+          if (midiRecorderRef?.current.isActive()) midiRecorderRef.current.recordNote(note.freq, time, secondsPerBeat * 2 * ageDur, velocity)
         }
       }
 
@@ -233,7 +257,7 @@ export function useSequencer(
     }
 
     timerRef.current = setTimeout(scheduleNextStep, 25)
-  }, [mutableGridRef, liveCellsRef, settingsRef, manualMouseRef, travelerRef, lorenzRef, setGrid, midiOutputRef, midiRecorderRef])
+  }, [mutableGridRef, liveCellsRef, settingsRef, manualMouseRef, travelerRef, lorenzRef, setGrid, ageGridRef, midiOutputRef, midiRecorderRef])
 
   const togglePlay = useCallback(() => {
     const engine = engineRef.current

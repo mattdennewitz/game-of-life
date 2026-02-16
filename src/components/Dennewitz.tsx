@@ -19,17 +19,19 @@ export default function Dennewitz() {
   const [loopLock, setLoopLock] = useState(false)
   const [loopSteps, setLoopSteps] = useState(16)
   const [seed, setSeed] = useState('dennewitz')
+  const [dynamicSensitivity, setDynamicSensitivity] = useState(0.7)
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
   const mutableGridRef = useRef(grid)
   const liveCellsRef = useRef(new Set<number>())
+  const ageGridRef = useRef<number[][]>(Array(32).fill(null).map(() => Array(32).fill(0)))
   const manualMouseRef = useRef({ x: 16, y: 16 })
   const travelerRef = useRef({ x: 16, y: 16, vx: 0.3, vy: 0.3 })
   const lorenzRef = useRef<LorenzState>({ x: 1, y: 1, z: 1, gridX: 16, gridY: 16 })
   const settingsRef = useRef<SequencerSettings>({
     scale, treatment, tempo,
     controlMode, mutationRate, gridSize,
-    loopLock, loopSteps,
+    loopLock, loopSteps, dynamicSensitivity,
   })
 
   // Keep settings ref in sync
@@ -37,15 +39,15 @@ export default function Dennewitz() {
     settingsRef.current = {
       scale, treatment, tempo,
       controlMode, mutationRate, gridSize,
-      loopLock, loopSteps,
+      loopLock, loopSteps, dynamicSensitivity,
     }
-  }, [scale, treatment, tempo, controlMode, mutationRate, gridSize, loopLock, loopSteps])
+  }, [scale, treatment, tempo, controlMode, mutationRate, gridSize, loopLock, loopSteps, dynamicSensitivity])
 
   const midi = useMidi()
 
   const { isPlaying, togglePlay, centroid, engineRef } = useSequencer(
     mutableGridRef, liveCellsRef, settingsRef, manualMouseRef, travelerRef, lorenzRef, setGrid,
-    midi.midiOutputRef, midi.midiRecorderRef,
+    ageGridRef, midi.midiOutputRef, midi.midiRecorderRef,
   )
 
   const { handleMouseDown, handleMouseEnter, handleMouseLeave } = useGridInteraction(
@@ -59,6 +61,7 @@ export default function Dennewitz() {
     const newGrid = createRandomGrid(size, currentSeed)
     mutableGridRef.current = newGrid
     liveCellsRef.current = buildLiveCellsSet(newGrid, size)
+    ageGridRef.current = newGrid.map(row => row.map(cell => cell === 1 ? 1 : 0))
     setGrid(newGrid)
   }, [gridSize])
 
@@ -66,6 +69,7 @@ export default function Dennewitz() {
     const empty = Array(gridSize).fill(null).map(() => Array(gridSize).fill(0) as number[])
     mutableGridRef.current = empty
     liveCellsRef.current = new Set()
+    ageGridRef.current = Array(gridSize).fill(null).map(() => Array(gridSize).fill(0))
     setGrid(empty)
   }, [gridSize])
 
@@ -132,6 +136,8 @@ export default function Dennewitz() {
         onSetScale={setScale}
         onSetTreatment={setTreatment}
         onSetControlMode={setControlMode}
+        dynamicSensitivity={dynamicSensitivity}
+        onSetDynamicSensitivity={setDynamicSensitivity}
         loopLock={loopLock}
         loopSteps={loopSteps}
         onSetLoopLock={setLoopLock}
