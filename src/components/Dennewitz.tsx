@@ -6,6 +6,7 @@ import { useMidi } from '@/hooks/useMidi'
 import { createRandomGrid } from '@/simulation/random'
 import Header from './Header'
 import AppSidebar from './Sidebar'
+import Overview from './Overview'
 import Grid from './Grid'
 import Footer from './Footer'
 
@@ -22,6 +23,7 @@ export default function Dennewitz() {
   const [seed, setSeed] = useState('dennewitz')
   const [dynamicSensitivity, setDynamicSensitivity] = useState(0.7)
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [overviewOpen, setOverviewOpen] = useState(false)
 
   const mutableGridRef = useRef(grid)
   const liveCellsRef = useRef(new Set<number>())
@@ -138,6 +140,7 @@ export default function Dennewitz() {
         loopSteps={loopSteps}
         onSetLoopSteps={setLoopSteps}
         onExportLoop={handleExportLoop}
+        onToggleOverview={() => setOverviewOpen(o => !o)}
       />
 
       <AppSidebar
@@ -179,6 +182,8 @@ export default function Dennewitz() {
         hasRecordedEvents={midi.hasRecordedEvents}
         onDownloadMidi={() => midi.downloadRecording(tempo)}
       />
+
+      <Overview open={overviewOpen} onOpenChange={setOverviewOpen} />
 
       <main className="flex-1 flex flex-col p-4 overflow-hidden">
         <Grid

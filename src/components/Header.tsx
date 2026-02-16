@@ -1,4 +1,4 @@
-import { Play, Square, Sun, Moon, PanelLeft, Circle, Download, Repeat, Loader2 } from 'lucide-react'
+import { Play, Square, Sun, Moon, PanelLeft, Info, Circle, Download, Repeat, Loader2 } from 'lucide-react'
 import { useState, type KeyboardEvent } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -22,12 +22,14 @@ interface HeaderProps {
   loopSteps: number
   onSetLoopSteps: (steps: number) => void
   onExportLoop: () => void
+  onToggleOverview: () => void
 }
 
 export default function Header({
   isPlaying, isRecording, onTogglePlay, onToggleSidebar,
   onToggleRecording, hasRecordedEvents, onDownloadMidi,
   loopLock, onToggleLoopLock, isLoopFull, loopRecordedSteps, loopSteps, onSetLoopSteps, onExportLoop,
+  onToggleOverview,
 }: HeaderProps) {
   const [dark, setDark] = useState(() => {
     const stored = localStorage.getItem('theme')
@@ -168,6 +170,10 @@ export default function Header({
           )}
 
           <Separator orientation="vertical" className="h-4" />
+
+          <Button variant="ghost" size="icon" onClick={onToggleOverview}>
+            <Info size={18} />
+          </Button>
 
           <Button variant="ghost" size="icon" onClick={toggleDark} className="rounded-full">
             {dark ? <Sun size={18} /> : <Moon size={18} />}
