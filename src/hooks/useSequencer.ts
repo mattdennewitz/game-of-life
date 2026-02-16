@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback, type MutableRefObject } from 'react'
 import { AudioEngine } from '@/audio/engine'
-import { calculateNotes, type ScanResult } from '@/audio/notes'
+import { calculateNotes, type ScanResult, type NoteInfo } from '@/audio/notes'
 import {
   selectByConsonance, voiceChord, chooseMelodicNote, selectArpPattern, computeDynamics,
   createMelodicState, type MelodicState,
@@ -154,6 +154,7 @@ export function useSequencer(
   const [centroid, setCentroid] = useState({ x: 16, y: 16 })
   const [isLoopFull, setIsLoopFull] = useState(false)
   const [loopRecordedSteps, setLoopRecordedSteps] = useState(0)
+  const [playingNotes, setPlayingNotes] = useState<NoteInfo[]>([])
 
   const engineRef = useRef<AudioEngine | null>(null)
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -253,16 +254,21 @@ export function useSequencer(
       requestAnimationFrame(() => setCentroid(scanResult.pos))
 
       // Consonance-based note selection — density controls note count
-      const selected = selectByConsonance(scanResult.notes, 8, scanResult.density)
+      // Chromatic/quarter-tone: block minor 2nds and tritones (score 1) to avoid harsh clusters
+      const minConsonance = (scale === 'chromatic' || scale === 'quarter-tone') ? 3 : 0
+      const selected = selectByConsonance(scanResult.notes, 8, scanResult.density, minConsonance)
 
       // Compute dynamics from density
       const dyn = computeDynamics(scanResult.density, prevDensityRef.current, stepRef.current, dynamicSensitivity)
       prevDensityRef.current = scanResult.density
 
+      let stepNotes: NoteInfo[] = []
+
       if (!dyn.rest && selected.length > 0) {
         if (treatment === 'chord') {
           const voiced = voiceChord(selected, prevChordRef.current)
           prevChordRef.current = voiced.notes.map(n => n.midi)
+          stepNotes = voiced.notes
           voiced.notes.forEach((n) => {
             const ageFactor = Math.min(1.3, 0.7 + n.age * 0.1)
             const vol = Math.min(0.15, dyn.volume * n.vol * ageFactor * 0.4 / voiced.notes.length)
@@ -274,6 +280,7 @@ export function useSequencer(
         } else if (treatment === 'line') {
           const choice = chooseMelodicNote(selected, melodicStateRef.current)
           if (choice.note) {
+            stepNotes = [choice.note]
             const dur = secondsPerBeat * 3 * choice.duration
             const vol = dyn.volume * choice.note.vol * 0.2
             const velocity = Math.min(127, dyn.velocity)
@@ -285,6 +292,7 @@ export function useSequencer(
           const pattern = selectArpPattern(scanResult.density)
           const idx = pattern[stepRef.current % pattern.length] % selected.length
           const note = selected[idx]
+          stepNotes = [note]
           const ageDur = note.age > 3 ? 1.4 : note.age > 1 ? 1.0 : 0.6
           const vol = dyn.volume * note.vol * 0.2
           const velocity = Math.min(127, dyn.velocity)
@@ -293,6 +301,8 @@ export function useSequencer(
           if (midiRecorderRef?.current.isActive()) midiRecorderRef.current.recordNote(note.freq, time, secondsPerBeat * 2 * ageDur, velocity)
         }
       }
+
+      requestAnimationFrame(() => setPlayingNotes(stepNotes))
 
       stepRef.current++
       nextNoteTimeRef.current += secondsPerBeat
@@ -311,9 +321,10 @@ export function useSequencer(
       scheduleNextStep()
     } else {
       if (timerRef.current) clearTimeout(timerRef.current)
+      setPlayingNotes([])
     }
     setIsPlaying(!isPlaying)
   }, [isPlaying, scheduleNextStep])
 
-  return { isPlaying, togglePlay, centroid, engineRef, loopBufferRef, isLoopFull, loopRecordedSteps }
+  return { isPlaying, togglePlay, centroid, engineRef, loopBufferRef, isLoopFull, loopRecordedSteps, playingNotes }
 }

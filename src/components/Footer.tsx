@@ -1,4 +1,4 @@
-import { SCALE_INFO } from '@/audio/notes'
+import { SCALE_INFO, formatPlayingNotes, type NoteInfo } from '@/audio/notes'
 
 interface FooterProps {
   isPlaying: boolean
@@ -8,9 +8,10 @@ interface FooterProps {
   scale: string
   treatment: string
   dynamicSensitivity: number
+  playingNotes: NoteInfo[]
 }
 
-export default function Footer({ isPlaying, gridSize, mutationRate, tempo, scale, treatment, dynamicSensitivity }: FooterProps) {
+export default function Footer({ isPlaying, gridSize, mutationRate, tempo, scale, treatment, dynamicSensitivity, playingNotes }: FooterProps) {
   return (
     <footer className="px-6 py-3 border-t border-border flex items-center justify-between text-xs text-muted-foreground">
       <div className="flex items-center gap-6">
@@ -24,6 +25,7 @@ export default function Footer({ isPlaying, gridSize, mutationRate, tempo, scale
         <div>Harmony: {SCALE_INFO[scale]?.label ?? scale}</div>
         <div>Voice: {treatment}</div>
         <div>Dynamics: {Math.round(dynamicSensitivity * 100)}%</div>
+        <div className="font-mono">Notes: {formatPlayingNotes(playingNotes, scale)}</div>
       </div>
       <div className="text-muted-foreground/50">Dennewitz</div>
     </footer>

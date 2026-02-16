@@ -49,7 +49,7 @@ export default function Dennewitz() {
 
   const midi = useMidi()
 
-  const { isPlaying, togglePlay, centroid, engineRef, loopBufferRef, isLoopFull, loopRecordedSteps } = useSequencer(
+  const { isPlaying, togglePlay, centroid, engineRef, loopBufferRef, isLoopFull, loopRecordedSteps, playingNotes } = useSequencer(
     mutableGridRef, liveCellsRef, settingsRef, manualMouseRef, travelerRef, lorenzRef, bounceRef, setGrid,
     ageGridRef, midi.midiOutputRef, midi.midiRecorderRef,
   )
@@ -207,6 +207,7 @@ export default function Dennewitz() {
         scale={scale}
         treatment={treatment}
         dynamicSensitivity={dynamicSensitivity}
+        playingNotes={playingNotes}
       />
     </div>
   )

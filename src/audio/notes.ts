@@ -28,6 +28,65 @@ export const SCALES: Record<string, ScaleDef> = {
   'quarter-tone':  { type: 'semitone', offsets: [0, 0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5, 5.5, 6, 6.5, 7, 7.5, 8, 8.5, 9, 9.5, 10, 10.5, 11, 11.5] },
 }
 
+const NOTE_NAMES = ['C', 'C♯', 'D', 'D♯', 'E', 'F', 'F♯', 'G', 'G♯', 'A', 'A♯', 'B']
+
+function formatSemitoneNote(midi: number): string {
+  return NOTE_NAMES[((midi % 12) + 12) % 12] + Math.floor(midi / 12 - 1)
+}
+
+function formatQuarterToneNote(n: NoteInfo): string {
+  const nearest = Math.round(n.midi)
+  const diff = n.midi - nearest
+  const name = formatSemitoneNote(nearest)
+  if (diff > 0.25) return name + '↑'
+  if (diff < -0.25) return name + '↓'
+  return name
+}
+
+function formatRatioNote(n: NoteInfo, scale: RatioScale): string {
+  // Reverse-lookup: find which ratio × root produced this frequency
+  const octave = Math.floor(n.midi / 12)
+  const rootMidi = octave * 12
+  const rootFreq = Math.pow(2, (rootMidi - 69) / 12) * 440
+  const actualRatio = n.freq / rootFreq
+
+  let bestIdx = 0
+  let bestDiff = Infinity
+  for (let i = 0; i < scale.ratios.length; i++) {
+    const diff = Math.abs(actualRatio - scale.ratios[i])
+    if (diff < bestDiff) { bestDiff = diff; bestIdx = i }
+  }
+
+  const r = scale.ratios[bestIdx]
+  // Format ratio as fraction or integer
+  const label = formatRatioLabel(r)
+  return `${label}·${octave - 1}`
+}
+
+function formatRatioLabel(r: number): string {
+  if (r === 1) return '1'
+  // Try common fractions
+  for (const d of [2, 3, 4, 5, 6, 7, 8]) {
+    const n = r * d
+    if (Math.abs(n - Math.round(n)) < 0.001) {
+      return `${Math.round(n)}/${d}`
+    }
+  }
+  return r.toFixed(3)
+}
+
+export function formatPlayingNotes(notes: NoteInfo[], scaleKey: string): string {
+  if (notes.length === 0) return '—'
+  const scale = SCALES[scaleKey]
+  if (scale.type === 'ratio') {
+    return notes.map(n => formatRatioNote(n, scale)).join('  ')
+  }
+  if (scaleKey === 'quarter-tone') {
+    return notes.map(n => formatQuarterToneNote(n)).join('  ')
+  }
+  return notes.map(n => formatSemitoneNote(n.midi)).join('  ')
+}
+
 export const SCALE_INFO: Record<string, { label: string; description: string }> = {
   diatonic:        { label: 'Diatonic',               description: 'Standard 7-note major scale' },
   pentatonic:      { label: 'Pentatonic',             description: 'Universal 5-note scale' },
