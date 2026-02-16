@@ -5,6 +5,7 @@ import { GRID_OPTIONS, LOOP_STEP_PRESETS } from '@/simulation/constants'
 import { Button } from '@/components/ui/button'
 import { Slider } from '@/components/ui/slider'
 import { Input } from '@/components/ui/input'
+import { Switch } from '@/components/ui/switch'
 import {
   Sheet,
   SheetContent,
@@ -250,98 +251,97 @@ export default function AppSidebar({
               <p className="text-xs text-muted-foreground">Not supported in this browser</p>
             ) : (
               <div className="space-y-3">
-                <Button
-                  variant={midiEnabled ? 'default' : 'outline'}
-                  size="sm"
-                  className="w-full"
-                  onClick={() => onSetMidiEnabled(!midiEnabled)}
-                >
-                  {midiEnabled ? 'Enabled' : 'Disabled'}
-                </Button>
-
-                <Select
-                  value={selectedMidiOutput}
-                  onValueChange={onSetSelectedMidiOutput}
-                  disabled={!midiEnabled}
-                >
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder={midiOutputs.length === 0 ? 'No ports' : 'Select output'} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {midiOutputs.map((port) => (
-                      <SelectItem key={port.id} value={port.id} label={port.name || port.id} />
-                    ))}
-                  </SelectContent>
-                </Select>
-
-                <div className="flex gap-2">
-                  <Button
-                    variant={isRecording ? 'destructive' : 'outline'}
-                    size="sm"
-                    className="flex-1 gap-1.5"
-                    onClick={onToggleRecording}
-                  >
-                    <Circle size={12} fill={isRecording ? 'currentColor' : 'none'} />
-                    {isRecording ? 'Stop' : 'Record'}
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="flex-1 gap-1.5"
-                    disabled={!hasRecordedEvents}
-                    onClick={onDownloadMidi}
-                  >
-                    <Download size={12} />
-                    .mid
-                  </Button>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">Send to MIDI output</span>
+                  <Switch checked={midiEnabled} onCheckedChange={onSetMidiEnabled} />
                 </div>
+
+                {midiEnabled && (
+                  <>
+                    <Select
+                      value={selectedMidiOutput}
+                      onValueChange={onSetSelectedMidiOutput}
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder={midiOutputs.length === 0 ? 'No ports' : 'Select output'} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {midiOutputs.map((port) => (
+                          <SelectItem key={port.id} value={port.id} label={port.name || port.id} />
+                        ))}
+                      </SelectContent>
+                    </Select>
+
+                    <div className="flex gap-2">
+                      <Button
+                        variant={isRecording ? 'destructive' : 'outline'}
+                        size="sm"
+                        className="flex-1 gap-1.5"
+                        onClick={onToggleRecording}
+                      >
+                        <Circle size={12} fill={isRecording ? 'currentColor' : 'none'} />
+                        {isRecording ? 'Stop' : 'Record'}
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="flex-1 gap-1.5"
+                        disabled={!hasRecordedEvents}
+                        onClick={onDownloadMidi}
+                      >
+                        <Download size={12} />
+                        .mid
+                      </Button>
+                    </div>
+                  </>
+                )}
               </div>
             )}
           </Section>
 
           {/* Loop Lock */}
           <Section label="Loop Lock" icon={<Repeat size={14} className="text-emerald-500" />}>
-            <Button
-              variant={loopLock ? 'default' : 'outline'}
-              size="sm"
-              className={`w-full mb-3 ${loopLock ? 'bg-emerald-600 hover:bg-emerald-700 text-white' : ''}`}
-              onClick={() => onSetLoopLock(!loopLock)}
-            >
-              {loopLock ? 'Locked' : 'Off'}
-            </Button>
-            <div className="flex flex-wrap gap-1.5 mb-3">
-              {LOOP_STEP_PRESETS.map((n) => (
-                <Button
-                  key={n}
-                  variant={loopSteps === n ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => onSetLoopSteps(n)}
-                >
-                  {n}
-                </Button>
-              ))}
+            <div className={`flex items-center justify-between ${loopLock ? 'mb-3' : ''}`}>
+              <span className="text-sm text-muted-foreground">Record loop buffer</span>
+              <Switch checked={loopLock} onCheckedChange={onSetLoopLock} />
             </div>
-            <Input
-              type="number"
-              min={1}
-              value={loopInput}
-              onChange={(e) => setLoopDraft(e.target.value)}
-              onBlur={commitLoopInput}
-              onKeyDown={handleLoopKeyDown}
-              className="font-mono text-sm"
-              placeholder="Custom length…"
-            />
-            {loopLock && !isLoopFull && (
-              <div className="flex items-center justify-center gap-2 mt-3 py-2 text-sm text-muted-foreground">
-                <Loader2 size={14} className="animate-spin" />
-                Recording loop… {loopRecordedSteps}/{loopSteps}
-              </div>
-            )}
-            {loopLock && isLoopFull && (
-              <Button variant="outline" size="sm" className="w-full mt-3 gap-1.5" onClick={onExportLoop}>
-                <Download size={12} />
-                Export .mid
-              </Button>
+            {loopLock && (
+              <>
+                <div className="flex flex-wrap gap-1.5 mb-3">
+                  {LOOP_STEP_PRESETS.map((n) => (
+                    <Button
+                      key={n}
+                      variant={loopSteps === n ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => onSetLoopSteps(n)}
+                    >
+                      {n}
+                    </Button>
+                  ))}
+                </div>
+                <Input
+                  type="number"
+                  min={1}
+                  value={loopInput}
+                  onChange={(e) => setLoopDraft(e.target.value)}
+                  onBlur={commitLoopInput}
+                  onKeyDown={handleLoopKeyDown}
+                  className="font-mono text-sm"
+                  placeholder="Custom length…"
+                />
+                {!isLoopFull && (
+                  <div className="flex items-center justify-center gap-2 mt-3 py-2 text-sm text-muted-foreground">
+                    <Loader2 size={14} className="animate-spin" />
+                    Recording loop… {loopRecordedSteps}/{loopSteps}
+                  </div>
+                )}
+                {isLoopFull && (
+                  <Button variant="outline" size="sm" className="w-full mt-3 gap-1.5" onClick={onExportLoop}>
+                    <Download size={12} />
+                    Export .mid
+                  </Button>
+                )}
+              </>
             )}
           </Section>
 
