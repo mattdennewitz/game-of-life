@@ -4,6 +4,8 @@ export function useGridInteraction(
   grid: number[][],
   setGrid: (g: number[][]) => void,
   mutableGridRef: MutableRefObject<number[][]>,
+  liveCellsRef: MutableRefObject<Set<number>>,
+  gridSize: number,
 ) {
   const [isMouseDown, setIsMouseDown] = useState(false)
   const [drawMode, setDrawMode] = useState(1)
@@ -22,10 +24,13 @@ export function useGridInteraction(
       setIsMouseDown(true)
       const next = grid.map((row) => [...row])
       next[y][x] = newMode
+      const idx = y * gridSize + x
+      if (newMode) liveCellsRef.current.add(idx)
+      else liveCellsRef.current.delete(idx)
       mutableGridRef.current = next
       setGrid(next)
     },
-    [grid, setGrid, mutableGridRef],
+    [grid, setGrid, mutableGridRef, liveCellsRef, gridSize],
   )
 
   const handleMouseEnter = useCallback(
@@ -33,10 +38,13 @@ export function useGridInteraction(
       if (!isMouseDown) return
       const next = grid.map((row) => [...row])
       next[y][x] = drawMode
+      const idx = y * gridSize + x
+      if (drawMode) liveCellsRef.current.add(idx)
+      else liveCellsRef.current.delete(idx)
       mutableGridRef.current = next
       setGrid(next)
     },
-    [isMouseDown, drawMode, grid, setGrid, mutableGridRef],
+    [isMouseDown, drawMode, grid, setGrid, mutableGridRef, liveCellsRef, gridSize],
   )
 
   const handleMouseLeave = useCallback(() => {

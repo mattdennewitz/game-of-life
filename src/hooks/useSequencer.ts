@@ -47,7 +47,7 @@ export interface SequencerSettings {
 
 function updateTraveler(
   travelerRef: MutableRefObject<{ x: number; y: number; vx: number; vy: number }>,
-  grid: number[][],
+  liveCells: Set<number>,
   gridSize: number,
 ) {
   const t = travelerRef.current
@@ -55,23 +55,21 @@ function updateTraveler(
   let gx = 0
   let gy = 0
   const radius = 7
-  for (let y = 0; y < gridSize; y++) {
-    const row = grid[y]
-    for (let x = 0; x < gridSize; x++) {
-      if (row[x] !== 1) continue
-      let dx = x - t.x
-      let dy = y - t.y
-      // Toroidal shortest distance
-      if (dx > gridSize / 2) dx -= gridSize
-      if (dx < -gridSize / 2) dx += gridSize
-      if (dy > gridSize / 2) dy -= gridSize
-      if (dy < -gridSize / 2) dy += gridSize
-      const dist = Math.sqrt(dx * dx + dy * dy)
-      if (dist > 0 && dist < radius) {
-        const strength = 1 / (dist * dist)
-        gx += dx * strength
-        gy += dy * strength
-      }
+  for (const idx of liveCells) {
+    const x = idx % gridSize
+    const y = Math.floor(idx / gridSize)
+    let dx = x - t.x
+    let dy = y - t.y
+    // Toroidal shortest distance
+    if (dx > gridSize / 2) dx -= gridSize
+    if (dx < -gridSize / 2) dx += gridSize
+    if (dy > gridSize / 2) dy -= gridSize
+    if (dy < -gridSize / 2) dy += gridSize
+    const dist = Math.sqrt(dx * dx + dy * dy)
+    if (dist > 0 && dist < radius) {
+      const strength = 1 / (dist * dist)
+      gx += dx * strength
+      gy += dy * strength
     }
   }
 
@@ -108,8 +106,20 @@ function updateTraveler(
   t.y = ((t.y + vy) % gridSize + gridSize) % gridSize
 }
 
+export function buildLiveCellsSet(grid: number[][], size: number): Set<number> {
+  const set = new Set<number>()
+  for (let y = 0; y < size; y++) {
+    const row = grid[y]
+    for (let x = 0; x < size; x++) {
+      if (row[x] === 1) set.add(y * size + x)
+    }
+  }
+  return set
+}
+
 export function useSequencer(
   mutableGridRef: MutableRefObject<number[][]>,
+  liveCellsRef: MutableRefObject<Set<number>>,
   settingsRef: MutableRefObject<SequencerSettings>,
   manualMouseRef: MutableRefObject<{ x: number; y: number }>,
   travelerRef: MutableRefObject<{ x: number; y: number; vx: number; vy: number }>,
@@ -151,11 +161,12 @@ export function useSequencer(
         if (stepRef.current % 4 === 0) {
           const nextGrid = getNextGeneration(mutableGridRef.current, gridSize, mutationRate)
           mutableGridRef.current = nextGrid
+          liveCellsRef.current = buildLiveCellsSet(nextGrid, gridSize)
           requestAnimationFrame(() => setGrid(nextGrid))
         }
 
         if (controlMode === 'traveler') {
-          updateTraveler(travelerRef, mutableGridRef.current, gridSize)
+          updateTraveler(travelerRef, liveCellsRef.current, gridSize)
         } else if (controlMode === 'lorenz') {
           updateLorenz(lorenzRef, gridSize)
         }
@@ -177,6 +188,7 @@ export function useSequencer(
           scale,
           travelerRef.current,
           lorenzRef.current,
+          liveCellsRef.current,
         )
         notes = live.notes
         pos = live.pos
@@ -221,7 +233,7 @@ export function useSequencer(
     }
 
     timerRef.current = setTimeout(scheduleNextStep, 25)
-  }, [mutableGridRef, settingsRef, manualMouseRef, travelerRef, lorenzRef, setGrid, midiOutputRef, midiRecorderRef])
+  }, [mutableGridRef, liveCellsRef, settingsRef, manualMouseRef, travelerRef, lorenzRef, setGrid, midiOutputRef, midiRecorderRef])
 
   const togglePlay = useCallback(() => {
     const engine = engineRef.current

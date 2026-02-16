@@ -30,6 +30,7 @@ export function calculateNotes(
   scaleKey: string,
   travelerPos: { x: number; y: number } = { x: 16, y: 16 },
   lorenzPos: { gridX: number; gridY: number } = { gridX: 16, gridY: 16 },
+  liveCells?: Set<number>,
 ): { notes: number[]; pos: { x: number; y: number } } {
   let targetX: number
   let targetY: number
@@ -43,28 +44,18 @@ export function calculateNotes(
   } else if (controlMode === 'lorenz') {
     targetX = lorenzPos.gridX
     targetY = lorenzPos.gridY
-  } else {
+  } else if (liveCells && liveCells.size > 0) {
     let sumX = 0
     let sumY = 0
-    let count = 0
-    for (let y = 0; y < size; y++) {
-      const row = currentGrid[y]
-      for (let x = 0; x < size; x++) {
-        if (row[x] === 1) {
-          sumX += x
-          sumY += y
-          count++
-        }
-      }
+    for (const idx of liveCells) {
+      sumX += idx % size
+      sumY += Math.floor(idx / size)
     }
-
-    if (count === 0) {
-      targetX = size / 2
-      targetY = size / 2
-    } else {
-      targetX = sumX / count
-      targetY = sumY / count
-    }
+    targetX = sumX / liveCells.size
+    targetY = sumY / liveCells.size
+  } else {
+    targetX = size / 2
+    targetY = size / 2
   }
 
   // Scan a 3-column window around the crosshair

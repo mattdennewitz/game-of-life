@@ -1,5 +1,5 @@
-import { useState, useEffect, useRef, useCallback, type MouseEvent } from 'react'
-import { useSequencer, type SequencerSettings, type LorenzState } from '@/hooks/useSequencer'
+import { useState, useEffect, useRef, useCallback } from 'react'
+import { useSequencer, buildLiveCellsSet, type SequencerSettings, type LorenzState } from '@/hooks/useSequencer'
 import { useGridInteraction } from '@/hooks/useGridInteraction'
 import { useMidi } from '@/hooks/useMidi'
 import { createRandomGrid } from '@/simulation/random'
@@ -22,6 +22,7 @@ export default function Dennewitz() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
   const mutableGridRef = useRef(grid)
+  const liveCellsRef = useRef(new Set<number>())
   const manualMouseRef = useRef({ x: 16, y: 16 })
   const travelerRef = useRef({ x: 16, y: 16, vx: 0.3, vy: 0.3 })
   const lorenzRef = useRef<LorenzState>({ x: 1, y: 1, z: 1, gridX: 16, gridY: 16 })
@@ -43,12 +44,12 @@ export default function Dennewitz() {
   const midi = useMidi()
 
   const { isPlaying, togglePlay, centroid, engineRef } = useSequencer(
-    mutableGridRef, settingsRef, manualMouseRef, travelerRef, lorenzRef, setGrid,
+    mutableGridRef, liveCellsRef, settingsRef, manualMouseRef, travelerRef, lorenzRef, setGrid,
     midi.midiOutputRef, midi.midiRecorderRef,
   )
 
   const { handleMouseDown, handleMouseEnter, handleMouseLeave } = useGridInteraction(
-    grid, setGrid, mutableGridRef,
+    grid, setGrid, mutableGridRef, liveCellsRef, gridSize,
   )
 
   const randomizeGrid = useCallback((customSeed?: string, forcedSize?: number) => {
@@ -57,12 +58,14 @@ export default function Dennewitz() {
     setSeed(currentSeed)
     const newGrid = createRandomGrid(size, currentSeed)
     mutableGridRef.current = newGrid
+    liveCellsRef.current = buildLiveCellsSet(newGrid, size)
     setGrid(newGrid)
   }, [gridSize])
 
   const clearGrid = useCallback(() => {
     const empty = Array(gridSize).fill(null).map(() => Array(gridSize).fill(0) as number[])
     mutableGridRef.current = empty
+    liveCellsRef.current = new Set()
     setGrid(empty)
   }, [gridSize])
 
@@ -71,12 +74,9 @@ export default function Dennewitz() {
     randomizeGrid(seed, newSize)
   }, [seed, randomizeGrid])
 
-  const handleGridMouseMove = useCallback((e: MouseEvent<HTMLDivElement>) => {
-    const bounds = e.currentTarget.getBoundingClientRect()
-    const x = ((e.clientX - bounds.left) / bounds.width) * gridSize
-    const y = ((e.clientY - bounds.top) / bounds.height) * gridSize
+  const handleGridMousePosition = useCallback((x: number, y: number) => {
     manualMouseRef.current = { x, y }
-  }, [gridSize])
+  }, [])
 
   const handleToggleRecording = useCallback(() => {
     const ctx = engineRef.current?.ctx
@@ -158,7 +158,7 @@ export default function Dennewitz() {
           onMouseDown={handleMouseDown}
           onMouseEnter={handleMouseEnter}
           onMouseLeave={handleMouseLeave}
-          onMouseMove={handleGridMouseMove}
+          onMousePositionChange={handleGridMousePosition}
         />
       </main>
 
