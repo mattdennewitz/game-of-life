@@ -106,6 +106,9 @@ export default function Dennewitz() {
       } else if (e.shiftKey && e.key === 'R') {
         e.preventDefault()
         handleToggleRecording()
+      } else if (e.shiftKey && e.key === 'L') {
+        e.preventDefault()
+        setLoopLock(prev => !prev)
       }
     }
     window.addEventListener('keydown', onKeyDown)
@@ -125,6 +128,15 @@ export default function Dennewitz() {
         isRecording={midi.isRecording}
         onTogglePlay={togglePlay}
         onToggleSidebar={() => setSidebarOpen(o => !o)}
+        onToggleRecording={handleToggleRecording}
+        hasRecordedEvents={midi.hasRecordedEvents}
+        onDownloadMidi={() => midi.downloadRecording(tempo)}
+        loopLock={loopLock}
+        onToggleLoopLock={() => setLoopLock(prev => !prev)}
+        isLoopFull={isLoopFull}
+        loopRecordedSteps={loopRecordedSteps}
+        loopSteps={loopSteps}
+        onExportLoop={handleExportLoop}
       />
 
       <AppSidebar

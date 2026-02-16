@@ -15,7 +15,7 @@ export default function Footer({ isPlaying, gridSize, mutationRate }: FooterProp
         <div>Res: {gridSize}x{gridSize}</div>
         <div>Chaos: {(mutationRate * 100).toFixed(2)}%</div>
       </div>
-      <div className="text-muted-foreground/50">Dennewitz v3.5</div>
+      <div className="text-muted-foreground/50">Dennewitz</div>
     </footer>
   )
 }
