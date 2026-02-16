@@ -35,7 +35,7 @@ function pairwiseConsonance(notes: NoteInfo[]): number {
 
 // --- Consonance-based note selection ---
 
-export function selectByConsonance(candidates: NoteInfo[], maxNotes: number, density: number): NoteInfo[] {
+export function selectByConsonance(candidates: NoteInfo[], maxNotes: number, density: number, minConsonance = 0): NoteInfo[] {
   // Fewer notes when sparse, more when dense
   const target = Math.max(2, Math.min(maxNotes, Math.round(2 + density * 24)))
   if (candidates.length <= target) return candidates
@@ -49,6 +49,18 @@ export function selectByConsonance(candidates: NoteInfo[], maxNotes: number, den
     let bestScore = -1
 
     for (const candidate of remaining) {
+      // Enforce consonance floor: reject candidates forming harsh intervals
+      if (minConsonance > 0) {
+        let dissonant = false
+        for (const s of selected) {
+          if (intervalScore(candidate.midi - s.midi) < minConsonance) {
+            dissonant = true
+            break
+          }
+        }
+        if (dissonant) continue
+      }
+
       let score = 0
       for (const s of selected) {
         score += intervalScore(candidate.midi - s.midi) * candidate.vol * s.vol
@@ -67,6 +79,8 @@ export function selectByConsonance(candidates: NoteInfo[], maxNotes: number, den
     if (bestCandidate) {
       selected.push(bestCandidate)
       remaining.delete(bestCandidate)
+    } else {
+      break  // all remaining candidates are dissonant with selected set
     }
   }
 

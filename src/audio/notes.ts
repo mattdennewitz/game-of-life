@@ -59,6 +59,91 @@ function scaleNoteToFreq(scale: ScaleDef, octave: number, degree: number): { fre
 const BASE_OCTAVE = 3
 const NUM_OCTAVES = 3
 
+/**
+ * Music Mouse-inspired manual mode.
+ *
+ * Generates scale degrees spanning roughly one octave below to one octave
+ * above the cursor's root pitch.  Each candidate is cell-gated so the
+ * automaton still sculpts the output.  Chord mode picks consonant subsets
+ * via selectByConsonance/voiceChord; line and arpeggio modes get enough
+ * stepwise candidates for real melodies.
+ *
+ * X-axis spread displaces upper degrees across extra octaves (close voicing
+ * at center, open voicing at edges).
+ */
+const MANUAL_HALF_SPAN = 7  // degrees above and below root to scan
+
+function buildManualVoices(
+  x: number, y: number, size: number,
+  currentScale: ScaleDef, scaleLen: number,
+  currentGrid: number[][], ageGrid?: number[][],
+): { notes: NoteInfo[], density: number, totalFound: number } {
+  const totalDegrees = scaleLen * NUM_OCTAVES
+  // Y axis → root scale degree (top = high, bottom = low)
+  const rootDegree = Math.floor((1 - y / size) * (totalDegrees - 1))
+  // X axis → voicing spread (0 at center, 1 at edges)
+  const spread = Math.abs(x - size / 2) / (size / 2)
+
+  const col = Math.round(x)
+  const notes: NoteInfo[] = []
+  const seen = new Set<number>()
+
+  // Count cells in ±5 radius for density
+  let densityCount = 0
+  for (let dr = -5; dr <= 5; dr++) {
+    for (let dc = -5; dc <= 5; dc++) {
+      const r = ((Math.round(y) + dr) % size + size) % size
+      const c = ((col + dc) % size + size) % size
+      if (currentGrid[r][c] === 1) densityCount++
+    }
+  }
+
+  for (let offset = -MANUAL_HALF_SPAN; offset <= MANUAL_HALF_SPAN; offset++) {
+    // Spread displacement: degrees further from root get pushed into higher octaves
+    const spreadShift = offset > 0 ? Math.round((offset / MANUAL_HALF_SPAN) * spread * scaleLen) : 0
+    const degree = rootDegree + offset + spreadShift
+
+    if (degree < 0 || degree >= totalDegrees) continue
+
+    const octave = BASE_OCTAVE + Math.floor(degree / scaleLen)
+    const degInScale = ((degree % scaleLen) + scaleLen) % scaleLen
+    const { freq, midi } = scaleNoteToFreq(currentScale, octave, degInScale)
+
+    // Dedup by pitch
+    const freqKey = Math.round(freq * 100)
+    if (seen.has(freqKey)) continue
+    seen.add(freqKey)
+
+    // Map pitch back to grid row
+    const voiceRow = Math.round((1 - degree / (totalDegrees - 1)) * (size - 1))
+
+    // Check ±3 rows, ±1 col neighborhood for a living cell (toroidal)
+    let gated = false
+    let cellAge = 0
+    for (let dr = -3; dr <= 3 && !gated; dr++) {
+      for (let dc = -1; dc <= 1 && !gated; dc++) {
+        const r = ((voiceRow + dr) % size + size) % size
+        const c = ((col + dc) % size + size) % size
+        if (currentGrid[r][c] === 1) {
+          gated = true
+          cellAge = ageGrid ? ageGrid[r][c] : 0
+        }
+      }
+    }
+
+    if (gated) {
+      // Root and chord tones (3rd, 5th, 7th) get full volume; passing tones softer
+      const isChordTone = (offset === 0 || offset === 2 || offset === 4 || offset === 6)
+      const vol = isChordTone ? 1.0 : 0.6
+      notes.push({ freq, midi, vol, row: voiceRow, col, age: cellAge })
+    }
+  }
+
+  notes.sort((a, b) => b.freq - a.freq)
+  const area = 11 * 11 // ±5 radius
+  return { notes, density: densityCount / area, totalFound: densityCount }
+}
+
 export function calculateNotes(
   currentGrid: number[][],
   size: number,
@@ -71,13 +156,21 @@ export function calculateNotes(
   liveCells?: Set<number>,
   ageGrid?: number[][],
 ): ScanResult {
+  const currentScale = SCALES[scaleKey]
+  const scaleLen = scaleLength(currentScale)
+
+  // Manual mode: Music Mouse-style harmonic space
+  if (controlMode === 'manual') {
+    const { notes, density, totalFound } = buildManualVoices(
+      manualPos.x, manualPos.y, size, currentScale, scaleLen, currentGrid, ageGrid,
+    )
+    return { notes, pos: { x: manualPos.x, y: manualPos.y }, density, totalFound }
+  }
+
   let targetX: number
   let targetY: number
 
-  if (controlMode === 'manual') {
-    targetX = manualPos.x
-    targetY = manualPos.y
-  } else if (controlMode === 'traveler') {
+  if (controlMode === 'traveler') {
     targetX = travelerPos.x
     targetY = travelerPos.y
   } else if (controlMode === 'lorenz') {
@@ -102,8 +195,6 @@ export function calculateNotes(
 
   // Scan a 3-column window around the crosshair
   const centerCol = Math.round(targetX)
-  const currentScale = SCALES[scaleKey]
-  const scaleLen = scaleLength(currentScale)
 
   const seen = new Set<number>()
   const notes: NoteInfo[] = []

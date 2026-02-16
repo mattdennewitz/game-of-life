@@ -71,7 +71,7 @@ export default function Overview({ open, onOpenChange }: OverviewProps) {
             <p className="mb-2">The crosshair determines which column of the grid is scanned for notes.</p>
             <ul className="space-y-1.5">
               <li><span className="text-foreground font-medium">Centroid</span> — follows the center of mass of all living cells</li>
-              <li><span className="text-foreground font-medium">Manual</span> — tracks your mouse position on the grid</li>
+              <li><span className="text-foreground font-medium">Manual</span> — an intelligent instrument inspired by Laurie Spiegel's Music Mouse. Your vertical position chooses a root pitch; horizontal position spreads the voicing from close to open. A 4-voice chord (root, 3rd, 5th, 7th) follows your cursor through the scale, but only voices near living cells are heard — the automaton gates the harmonic space.</li>
               <li><span className="text-foreground font-medium">Grey Pilgrim</span> — an autonomous traveler that wanders toward nearby living cells</li>
               <li><span className="text-foreground font-medium">Lorenz</span> — driven by a chaotic Lorenz attractor trajectory</li>
               <li><span className="text-foreground font-medium">DVD Bounce</span> — bounces off grid edges like the classic DVD screensaver</li>
