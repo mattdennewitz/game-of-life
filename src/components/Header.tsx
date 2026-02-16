@@ -1,5 +1,5 @@
 import { Play, Square, Sun, Moon, PanelLeft, Circle, Download, Repeat, Loader2 } from 'lucide-react'
-import { useEffect, useState, type KeyboardEvent } from 'react'
+import { useState, type KeyboardEvent } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Separator } from '@/components/ui/separator'
@@ -29,24 +29,14 @@ export default function Header({
   onToggleRecording, hasRecordedEvents, onDownloadMidi,
   loopLock, onToggleLoopLock, isLoopFull, loopRecordedSteps, loopSteps, onSetLoopSteps, onExportLoop,
 }: HeaderProps) {
-  const [dark, setDark] = useState(() => document.documentElement.classList.contains('dark'))
-  const [loopInput, setLoopInput] = useState('')
-
-  useEffect(() => {
+  const [dark, setDark] = useState(() => {
     const stored = localStorage.getItem('theme')
-    if (stored === 'dark') {
-      document.documentElement.classList.add('dark')
-      setDark(true)
-    }
-  }, [])
-
-  useEffect(() => {
-    if ((LOOP_STEP_PRESETS as readonly number[]).includes(loopSteps)) {
-      setLoopInput('')
-    } else {
-      setLoopInput(String(loopSteps))
-    }
-  }, [loopSteps])
+    if (stored === 'dark') document.documentElement.classList.add('dark')
+    return document.documentElement.classList.contains('dark')
+  })
+  const isCustomLoopSteps = !(LOOP_STEP_PRESETS as readonly number[]).includes(loopSteps)
+  const [loopDraft, setLoopDraft] = useState<string | null>(null)
+  const loopInput = loopDraft ?? (isCustomLoopSteps ? String(loopSteps) : '')
 
   const toggleDark = () => {
     const next = !dark
@@ -57,11 +47,8 @@ export default function Header({
 
   const commitLoopInput = () => {
     const n = parseInt(loopInput, 10)
-    if (!isNaN(n) && n >= 1) {
-      onSetLoopSteps(n)
-    } else {
-      setLoopInput('')
-    }
+    setLoopDraft(null)
+    if (!isNaN(n) && n >= 1) onSetLoopSteps(n)
   }
 
   const handleLoopKeyDown = (e: KeyboardEvent) => {
@@ -150,7 +137,7 @@ export default function Header({
                 type="number"
                 min={1}
                 value={loopInput}
-                onChange={(e) => setLoopInput(e.target.value)}
+                onChange={(e) => setLoopDraft(e.target.value)}
                 onBlur={commitLoopInput}
                 onKeyDown={handleLoopKeyDown}
                 className="h-7 font-mono text-xs"

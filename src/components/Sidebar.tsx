@@ -1,4 +1,4 @@
-import { useState, useEffect, type KeyboardEvent } from 'react'
+import { useState, type KeyboardEvent } from 'react'
 import { Dice5, Trash2, Sparkles, Grid3X3, Repeat, Cpu, ChevronDown, Music, Circle, Download, Loader2 } from 'lucide-react'
 import { SCALE_INFO } from '@/audio/notes'
 import { GRID_OPTIONS, LOOP_STEP_PRESETS } from '@/simulation/constants'
@@ -92,23 +92,13 @@ export default function AppSidebar({
   isRecording, onToggleRecording, hasRecordedEvents, onDownloadMidi,
 }: SidebarProps) {
   const isCustomLoopSteps = !(LOOP_STEP_PRESETS as readonly number[]).includes(loopSteps)
-  const [loopInput, setLoopInput] = useState(isCustomLoopSteps ? String(loopSteps) : '')
-
-  useEffect(() => {
-    if ((LOOP_STEP_PRESETS as readonly number[]).includes(loopSteps)) {
-      setLoopInput('')
-    } else {
-      setLoopInput(String(loopSteps))
-    }
-  }, [loopSteps])
+  const [loopDraft, setLoopDraft] = useState<string | null>(null)
+  const loopInput = loopDraft ?? (isCustomLoopSteps ? String(loopSteps) : '')
 
   const commitLoopInput = () => {
     const n = parseInt(loopInput, 10)
-    if (!isNaN(n) && n >= 1) {
-      onSetLoopSteps(n)
-    } else {
-      setLoopInput(isCustomLoopSteps ? String(loopSteps) : '')
-    }
+    setLoopDraft(null)
+    if (!isNaN(n) && n >= 1) onSetLoopSteps(n)
   }
 
   const handleLoopKeyDown = (e: KeyboardEvent) => {
@@ -335,7 +325,7 @@ export default function AppSidebar({
               type="number"
               min={1}
               value={loopInput}
-              onChange={(e) => setLoopInput(e.target.value)}
+              onChange={(e) => setLoopDraft(e.target.value)}
               onBlur={commitLoopInput}
               onKeyDown={handleLoopKeyDown}
               className="font-mono text-sm"

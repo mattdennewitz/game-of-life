@@ -10,8 +10,8 @@ import Grid from './Grid'
 import Footer from './Footer'
 
 export default function Dennewitz() {
-  const [gridSize, setGridSize] = useState(32)
-  const [grid, setGrid] = useState<number[][]>(() => Array(32).fill(null).map(() => Array(32).fill(0)))
+  const [gridSize, setGridSize] = useState(64)
+  const [grid, setGrid] = useState<number[][]>(() => Array(64).fill(null).map(() => Array(64).fill(0)))
   const [tempo, setTempo] = useState(120)
   const [scale, setScale] = useState('pentatonic')
   const [treatment, setTreatment] = useState('arpeggio')
@@ -25,10 +25,10 @@ export default function Dennewitz() {
 
   const mutableGridRef = useRef(grid)
   const liveCellsRef = useRef(new Set<number>())
-  const ageGridRef = useRef<number[][]>(Array(32).fill(null).map(() => Array(32).fill(0)))
-  const manualMouseRef = useRef({ x: 16, y: 16 })
-  const travelerRef = useRef({ x: 16, y: 16, vx: 0.3, vy: 0.3 })
-  const lorenzRef = useRef<LorenzState>({ x: 1, y: 1, z: 1, gridX: 16, gridY: 16 })
+  const ageGridRef = useRef<number[][]>(Array(64).fill(null).map(() => Array(64).fill(0)))
+  const manualMouseRef = useRef({ x: 32, y: 32 })
+  const travelerRef = useRef({ x: 32, y: 32, vx: 0.3, vy: 0.3 })
+  const lorenzRef = useRef<LorenzState>({ x: 1, y: 1, z: 1, gridX: 32, gridY: 32 })
   const settingsRef = useRef<SequencerSettings>({
     scale, treatment, tempo,
     controlMode, mutationRate, gridSize,
@@ -117,7 +117,7 @@ export default function Dennewitz() {
 
   // Initialize on mount
   useEffect(() => {
-    randomizeGrid('dennewitz', 32)
+    randomizeGrid('dennewitz', 64)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
