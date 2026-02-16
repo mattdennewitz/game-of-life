@@ -1,5 +1,5 @@
 import { useState, useEffect, type KeyboardEvent } from 'react'
-import { Dice5, Trash2, Sparkles, Grid3X3, Repeat, Cpu, ChevronDown, Music, Circle, Download } from 'lucide-react'
+import { Dice5, Trash2, Sparkles, Grid3X3, Repeat, Cpu, ChevronDown, Music, Circle, Download, Loader2 } from 'lucide-react'
 import { SCALE_INFO } from '@/audio/notes'
 import { GRID_OPTIONS } from '@/simulation/constants'
 import { Button } from '@/components/ui/button'
@@ -45,6 +45,9 @@ interface SidebarProps {
   loopSteps: number
   onSetLoopLock: (on: boolean) => void
   onSetLoopSteps: (steps: number) => void
+  isLoopFull: boolean
+  loopRecordedSteps: number
+  onExportLoop: () => void
   onClear: () => void
   midiSupported: boolean
   midiEnabled: boolean
@@ -84,7 +87,7 @@ export default function AppSidebar({
   open, onOpenChange,
   gridSize, seed, mutationRate, tempo, scale, treatment, controlMode,
   onChangeGridSize, onSetSeed, onRandomize, onSetMutationRate, onSetTempo,
-  onSetScale, onSetTreatment, onSetControlMode, dynamicSensitivity, onSetDynamicSensitivity, loopLock, loopSteps, onSetLoopLock, onSetLoopSteps, onClear,
+  onSetScale, onSetTreatment, onSetControlMode, dynamicSensitivity, onSetDynamicSensitivity, loopLock, loopSteps, onSetLoopLock, onSetLoopSteps, isLoopFull, loopRecordedSteps, onExportLoop, onClear,
   midiSupported, midiEnabled, onSetMidiEnabled, midiOutputs, selectedMidiOutput, onSetSelectedMidiOutput,
   isRecording, onToggleRecording, hasRecordedEvents, onDownloadMidi,
 }: SidebarProps) {
@@ -334,6 +337,18 @@ export default function AppSidebar({
               className="font-mono text-sm"
               placeholder="Custom steps"
             />
+            {loopLock && !isLoopFull && (
+              <div className="flex items-center justify-center gap-2 mt-3 py-2 text-sm text-muted-foreground">
+                <Loader2 size={14} className="animate-spin" />
+                Recording loop… {loopRecordedSteps}/{loopSteps}
+              </div>
+            )}
+            {loopLock && isLoopFull && (
+              <Button variant="outline" size="sm" className="w-full mt-3 gap-1.5" onClick={onExportLoop}>
+                <Download size={12} />
+                Export .mid
+              </Button>
+            )}
           </Section>
 
           {/* Wipe Matrix */}

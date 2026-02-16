@@ -136,6 +136,8 @@ export function useSequencer(
 ) {
   const [isPlaying, setIsPlaying] = useState(false)
   const [centroid, setCentroid] = useState({ x: 16, y: 16 })
+  const [isLoopFull, setIsLoopFull] = useState(false)
+  const [loopRecordedSteps, setLoopRecordedSteps] = useState(0)
 
   const engineRef = useRef<AudioEngine | null>(null)
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -152,6 +154,27 @@ export function useSequencer(
       if (timerRef.current) clearTimeout(timerRef.current)
     }
   }, [])
+
+  // Poll buffer ref at UI frequency to update loop recording state
+  useEffect(() => {
+    if (!isPlaying) {
+      setIsLoopFull(false)
+      setLoopRecordedSteps(0)
+      return
+    }
+    const id = setInterval(() => {
+      const { loopLock, loopSteps } = settingsRef.current
+      if (loopLock) {
+        const len = loopBufferRef.current.length
+        setLoopRecordedSteps(Math.min(len, loopSteps))
+        setIsLoopFull(len >= loopSteps)
+      } else {
+        setIsLoopFull(false)
+        setLoopRecordedSteps(0)
+      }
+    }, 100)
+    return () => clearInterval(id)
+  }, [isPlaying, settingsRef])
 
   const scheduleNextStep = useCallback(() => {
     const engine = engineRef.current
@@ -273,5 +296,5 @@ export function useSequencer(
     setIsPlaying(!isPlaying)
   }, [isPlaying, scheduleNextStep])
 
-  return { isPlaying, togglePlay, centroid, engineRef }
+  return { isPlaying, togglePlay, centroid, engineRef, loopBufferRef, isLoopFull, loopRecordedSteps }
 }

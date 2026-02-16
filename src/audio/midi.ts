@@ -77,6 +77,7 @@ export class MidiRecorder {
   private startTime = 0
   private active = false
   private nextChannel = 0
+  singleChannel = false
 
   start(audioCtxTime: number) {
     this.events = []
@@ -94,6 +95,7 @@ export class MidiRecorder {
   }
 
   private allocateChannel(): number {
+    if (this.singleChannel) return 0
     let ch = this.nextChannel
     if (ch === DRUM_CHANNEL) ch = (ch + 1) % 16
     this.nextChannel = (ch + 1) % 16

@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useSequencer, buildLiveCellsSet, type SequencerSettings, type LorenzState } from '@/hooks/useSequencer'
+import { downloadLoopMidi } from '@/audio/loop-export'
 import { useGridInteraction } from '@/hooks/useGridInteraction'
 import { useMidi } from '@/hooks/useMidi'
 import { createRandomGrid } from '@/simulation/random'
@@ -45,7 +46,7 @@ export default function Dennewitz() {
 
   const midi = useMidi()
 
-  const { isPlaying, togglePlay, centroid, engineRef } = useSequencer(
+  const { isPlaying, togglePlay, centroid, engineRef, loopBufferRef, isLoopFull, loopRecordedSteps } = useSequencer(
     mutableGridRef, liveCellsRef, settingsRef, manualMouseRef, travelerRef, lorenzRef, setGrid,
     ageGridRef, midi.midiOutputRef, midi.midiRecorderRef,
   )
@@ -81,6 +82,14 @@ export default function Dennewitz() {
   const handleGridMousePosition = useCallback((x: number, y: number) => {
     manualMouseRef.current = { x, y }
   }, [])
+
+  const handleExportLoop = useCallback(() => {
+    if (loopBufferRef.current.length === 0) return
+    downloadLoopMidi(
+      loopBufferRef.current.slice(0, loopSteps),
+      { treatment, tempo, dynamicSensitivity, scale },
+    )
+  }, [treatment, tempo, dynamicSensitivity, scale, loopSteps, loopBufferRef])
 
   const handleToggleRecording = useCallback(() => {
     const ctx = engineRef.current?.ctx
@@ -142,6 +151,9 @@ export default function Dennewitz() {
         loopSteps={loopSteps}
         onSetLoopLock={setLoopLock}
         onSetLoopSteps={setLoopSteps}
+        isLoopFull={isLoopFull}
+        loopRecordedSteps={loopRecordedSteps}
+        onExportLoop={handleExportLoop}
         onClear={clearGrid}
         midiSupported={midi.midiSupported}
         midiEnabled={midi.midiEnabled}
