@@ -127,6 +127,7 @@ export default function AppSidebar({
                   { key: 'manual', label: 'Manual', description: 'Mouse-controlled coordinate input' },
                   { key: 'traveler', label: 'Grey Pilgrim', description: 'Wanders toward nearby living cells' },
                   { key: 'lorenz', label: 'Lorenz', description: 'Chaotic butterfly attractor trajectory' },
+                  { key: 'dvd', label: 'DVD Bounce', description: 'Bounces off grid edges like a DVD logo' },
                 ] as const).map(({ key, label, description }) => (
                   <SelectItem key={key} value={key} label={label} description={description} />
                 ))}

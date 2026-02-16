@@ -74,6 +74,7 @@ export default function Overview({ open, onOpenChange }: OverviewProps) {
               <li><span className="text-foreground font-medium">Manual</span> — tracks your mouse position on the grid</li>
               <li><span className="text-foreground font-medium">Grey Pilgrim</span> — an autonomous traveler that wanders toward nearby living cells</li>
               <li><span className="text-foreground font-medium">Lorenz</span> — driven by a chaotic Lorenz attractor trajectory</li>
+              <li><span className="text-foreground font-medium">DVD Bounce</span> — bounces off grid edges like the classic DVD screensaver</li>
             </ul>
           </Section>
 

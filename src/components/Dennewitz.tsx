@@ -31,6 +31,7 @@ export default function Dennewitz() {
   const manualMouseRef = useRef({ x: 32, y: 32 })
   const travelerRef = useRef({ x: 32, y: 32, vx: 0.3, vy: 0.3 })
   const lorenzRef = useRef<LorenzState>({ x: 1, y: 1, z: 1, gridX: 32, gridY: 32 })
+  const bounceRef = useRef({ x: 32, y: 32, vx: 0.99, vy: 0.72 })
   const settingsRef = useRef<SequencerSettings>({
     scale, treatment, tempo,
     controlMode, mutationRate, gridSize,
@@ -49,7 +50,7 @@ export default function Dennewitz() {
   const midi = useMidi()
 
   const { isPlaying, togglePlay, centroid, engineRef, loopBufferRef, isLoopFull, loopRecordedSteps } = useSequencer(
-    mutableGridRef, liveCellsRef, settingsRef, manualMouseRef, travelerRef, lorenzRef, setGrid,
+    mutableGridRef, liveCellsRef, settingsRef, manualMouseRef, travelerRef, lorenzRef, bounceRef, setGrid,
     ageGridRef, midi.midiOutputRef, midi.midiRecorderRef,
   )
 

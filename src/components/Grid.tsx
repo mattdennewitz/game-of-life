@@ -1,5 +1,5 @@
 import { useRef, useEffect, useCallback, type MouseEvent } from 'react'
-import { Cpu, Hand, Compass, Orbit } from 'lucide-react'
+import { Cpu, Hand, Compass, Orbit, Tv } from 'lucide-react'
 
 interface GridProps {
   grid: number[][]
@@ -30,6 +30,7 @@ const CROSSHAIR_COLORS: Record<string, { line: string; glow: string }> = {
   manual:   { line: 'rgba(129,140,248,1)', glow: 'rgba(129,140,248,0.7)' },
   traveler: { line: 'rgba(251,191,36,1)',  glow: 'rgba(251,191,36,0.7)' },
   lorenz:   { line: 'rgba(251,113,133,1)', glow: 'rgba(251,113,133,0.7)' },
+  dvd:      { line: 'rgba(192,132,252,1)', glow: 'rgba(192,132,252,0.7)' },
   centroid: { line: 'rgba(128,128,128,0.3)', glow: 'rgba(128,128,128,0.3)' },
 }
 
@@ -233,6 +234,8 @@ export default function Grid({
           <><Compass size={14} className="text-amber-500" /> Grey Pilgrim</>
         ) : controlMode === 'lorenz' ? (
           <><Orbit size={14} className="text-rose-500" /> Lorenz Attractor</>
+        ) : controlMode === 'dvd' ? (
+          <><Tv size={14} className="text-purple-500" /> DVD Bounce</>
         ) : (
           <><Hand size={14} className="text-indigo-500" /> Manual Coordinate Input</>
         )}

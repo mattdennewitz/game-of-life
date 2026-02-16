@@ -50,6 +50,21 @@ export interface SequencerSettings {
   dynamicSensitivity: number
 }
 
+function updateBounce(
+  bounceRef: MutableRefObject<{ x: number; y: number; vx: number; vy: number }>,
+  gridSize: number,
+) {
+  const b = bounceRef.current
+  b.x += b.vx
+  b.y += b.vy
+
+  if (b.x <= 0) { b.vx = Math.abs(b.vx); b.x = 0 }
+  else if (b.x >= gridSize - 1) { b.vx = -Math.abs(b.vx); b.x = gridSize - 1 }
+
+  if (b.y <= 0) { b.vy = Math.abs(b.vy); b.y = 0 }
+  else if (b.y >= gridSize - 1) { b.vy = -Math.abs(b.vy); b.y = gridSize - 1 }
+}
+
 function updateTraveler(
   travelerRef: MutableRefObject<{ x: number; y: number; vx: number; vy: number }>,
   liveCells: Set<number>,
@@ -129,6 +144,7 @@ export function useSequencer(
   manualMouseRef: MutableRefObject<{ x: number; y: number }>,
   travelerRef: MutableRefObject<{ x: number; y: number; vx: number; vy: number }>,
   lorenzRef: MutableRefObject<LorenzState>,
+  bounceRef: MutableRefObject<{ x: number; y: number; vx: number; vy: number }>,
   setGrid: (g: number[][]) => void,
   ageGridRef: MutableRefObject<number[][]>,
   midiOutputRef?: MutableRefObject<MidiOutput>,
@@ -202,6 +218,8 @@ export function useSequencer(
           updateTraveler(travelerRef, liveCellsRef.current, gridSize)
         } else if (controlMode === 'lorenz') {
           updateLorenz(lorenzRef, gridSize)
+        } else if (controlMode === 'dvd') {
+          updateBounce(bounceRef, gridSize)
         }
       }
 
@@ -218,6 +236,7 @@ export function useSequencer(
           scale,
           travelerRef.current,
           lorenzRef.current,
+          bounceRef.current,
           liveCellsRef.current,
           ageGridRef.current,
         )
@@ -280,7 +299,7 @@ export function useSequencer(
     }
 
     timerRef.current = setTimeout(scheduleNextStep, 25)
-  }, [mutableGridRef, liveCellsRef, settingsRef, manualMouseRef, travelerRef, lorenzRef, setGrid, ageGridRef, midiOutputRef, midiRecorderRef])
+  }, [mutableGridRef, liveCellsRef, settingsRef, manualMouseRef, travelerRef, lorenzRef, bounceRef, setGrid, ageGridRef, midiOutputRef, midiRecorderRef])
 
   const togglePlay = useCallback(() => {
     const engine = engineRef.current

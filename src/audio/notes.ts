@@ -67,6 +67,7 @@ export function calculateNotes(
   scaleKey: string,
   travelerPos: { x: number; y: number } = { x: 16, y: 16 },
   lorenzPos: { gridX: number; gridY: number } = { gridX: 16, gridY: 16 },
+  bouncePos: { x: number; y: number } = { x: 16, y: 16 },
   liveCells?: Set<number>,
   ageGrid?: number[][],
 ): ScanResult {
@@ -82,6 +83,9 @@ export function calculateNotes(
   } else if (controlMode === 'lorenz') {
     targetX = lorenzPos.gridX
     targetY = lorenzPos.gridY
+  } else if (controlMode === 'dvd') {
+    targetX = bouncePos.x
+    targetY = bouncePos.y
   } else if (liveCells && liveCells.size > 0) {
     let sumX = 0
     let sumY = 0
