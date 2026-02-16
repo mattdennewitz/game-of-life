@@ -114,6 +114,13 @@ export default function Overview({ open, onOpenChange }: OverviewProps) {
             </div>
           </Section>
 
+          <Section label="MIDI" defaultOpen={false}>
+            <ul className="space-y-1.5 list-disc list-inside">
+              <li>Performances are recorded, and can be exported as MIDI files</li>
+              <li>Loop locking will record a number of steps, which can be exported as a MIDI file</li>
+            </ul>
+          </Section>
+
           <Section label="How it works" defaultOpen={false}>
             <ul className="space-y-1.5 list-disc list-inside">
               <li>The grid evolves (Conway rules + mutation) every 4 sequencer steps</li>
