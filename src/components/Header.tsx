@@ -1,9 +1,11 @@
 import { Play, Square, Sun, Moon, PanelLeft, Circle, Download, Repeat, Loader2 } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type KeyboardEvent } from 'react'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import { Separator } from '@/components/ui/separator'
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@/components/ui/tooltip'
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover'
+import { LOOP_STEP_PRESETS } from '@/simulation/constants'
 
 interface HeaderProps {
   isPlaying: boolean
@@ -28,6 +30,7 @@ export default function Header({
   loopLock, onToggleLoopLock, isLoopFull, loopRecordedSteps, loopSteps, onSetLoopSteps, onExportLoop,
 }: HeaderProps) {
   const [dark, setDark] = useState(() => document.documentElement.classList.contains('dark'))
+  const [loopInput, setLoopInput] = useState('')
 
   useEffect(() => {
     const stored = localStorage.getItem('theme')
@@ -37,11 +40,32 @@ export default function Header({
     }
   }, [])
 
+  useEffect(() => {
+    if ((LOOP_STEP_PRESETS as readonly number[]).includes(loopSteps)) {
+      setLoopInput('')
+    } else {
+      setLoopInput(String(loopSteps))
+    }
+  }, [loopSteps])
+
   const toggleDark = () => {
     const next = !dark
     setDark(next)
     document.documentElement.classList.toggle('dark', next)
     localStorage.setItem('theme', next ? 'dark' : 'light')
+  }
+
+  const commitLoopInput = () => {
+    const n = parseInt(loopInput, 10)
+    if (!isNaN(n) && n >= 1) {
+      onSetLoopSteps(n)
+    } else {
+      setLoopInput('')
+    }
+  }
+
+  const handleLoopKeyDown = (e: KeyboardEvent) => {
+    if (e.key === 'Enter') commitLoopInput()
   }
 
   return (
@@ -109,8 +133,8 @@ export default function Header({
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-auto p-2" align="end">
-              <div className="flex gap-1">
-                {[4, 8, 16, 32].map((n) => (
+              <div className="flex gap-1 mb-2">
+                {LOOP_STEP_PRESETS.map((n) => (
                   <Button
                     key={n}
                     variant={loopSteps === n ? 'default' : 'ghost'}
@@ -122,6 +146,16 @@ export default function Header({
                   </Button>
                 ))}
               </div>
+              <Input
+                type="number"
+                min={1}
+                value={loopInput}
+                onChange={(e) => setLoopInput(e.target.value)}
+                onBlur={commitLoopInput}
+                onKeyDown={handleLoopKeyDown}
+                className="h-7 font-mono text-xs"
+                placeholder="Custom length…"
+              />
             </PopoverContent>
           </Popover>
 

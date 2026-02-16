@@ -1,7 +1,7 @@
 import { useState, useEffect, type KeyboardEvent } from 'react'
 import { Dice5, Trash2, Sparkles, Grid3X3, Repeat, Cpu, ChevronDown, Music, Circle, Download, Loader2 } from 'lucide-react'
 import { SCALE_INFO } from '@/audio/notes'
-import { GRID_OPTIONS } from '@/simulation/constants'
+import { GRID_OPTIONS, LOOP_STEP_PRESETS } from '@/simulation/constants'
 import { Button } from '@/components/ui/button'
 import { Slider } from '@/components/ui/slider'
 import { Input } from '@/components/ui/input'
@@ -91,10 +91,15 @@ export default function AppSidebar({
   midiSupported, midiEnabled, onSetMidiEnabled, midiOutputs, selectedMidiOutput, onSetSelectedMidiOutput,
   isRecording, onToggleRecording, hasRecordedEvents, onDownloadMidi,
 }: SidebarProps) {
-  const [loopInput, setLoopInput] = useState(String(loopSteps))
+  const isCustomLoopSteps = !(LOOP_STEP_PRESETS as readonly number[]).includes(loopSteps)
+  const [loopInput, setLoopInput] = useState(isCustomLoopSteps ? String(loopSteps) : '')
 
   useEffect(() => {
-    setLoopInput(String(loopSteps))
+    if ((LOOP_STEP_PRESETS as readonly number[]).includes(loopSteps)) {
+      setLoopInput('')
+    } else {
+      setLoopInput(String(loopSteps))
+    }
   }, [loopSteps])
 
   const commitLoopInput = () => {
@@ -102,7 +107,7 @@ export default function AppSidebar({
     if (!isNaN(n) && n >= 1) {
       onSetLoopSteps(n)
     } else {
-      setLoopInput(String(loopSteps))
+      setLoopInput(isCustomLoopSteps ? String(loopSteps) : '')
     }
   }
 
@@ -314,13 +319,12 @@ export default function AppSidebar({
             >
               {loopLock ? 'Locked' : 'Off'}
             </Button>
-            <div className="flex gap-1.5 mb-2">
-              {[4, 8, 16, 32].map((n) => (
+            <div className="flex flex-wrap gap-1.5 mb-3">
+              {LOOP_STEP_PRESETS.map((n) => (
                 <Button
                   key={n}
                   variant={loopSteps === n ? 'default' : 'outline'}
                   size="sm"
-                  className="flex-1"
                   onClick={() => onSetLoopSteps(n)}
                 >
                   {n}
@@ -335,7 +339,7 @@ export default function AppSidebar({
               onBlur={commitLoopInput}
               onKeyDown={handleLoopKeyDown}
               className="font-mono text-sm"
-              placeholder="Custom steps"
+              placeholder="Custom length…"
             />
             {loopLock && !isLoopFull && (
               <div className="flex items-center justify-center gap-2 mt-3 py-2 text-sm text-muted-foreground">
