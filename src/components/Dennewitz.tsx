@@ -136,6 +136,7 @@ export default function Dennewitz() {
         isLoopFull={isLoopFull}
         loopRecordedSteps={loopRecordedSteps}
         loopSteps={loopSteps}
+        onSetLoopSteps={setLoopSteps}
         onExportLoop={handleExportLoop}
       />
 
@@ -196,6 +197,10 @@ export default function Dennewitz() {
         isPlaying={isPlaying}
         gridSize={gridSize}
         mutationRate={mutationRate}
+        tempo={tempo}
+        scale={scale}
+        treatment={treatment}
+        dynamicSensitivity={dynamicSensitivity}
       />
     </div>
   )

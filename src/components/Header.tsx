@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@/components/ui/tooltip'
+import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover'
 
 interface HeaderProps {
   isPlaying: boolean
@@ -17,13 +18,14 @@ interface HeaderProps {
   isLoopFull: boolean
   loopRecordedSteps: number
   loopSteps: number
+  onSetLoopSteps: (steps: number) => void
   onExportLoop: () => void
 }
 
 export default function Header({
   isPlaying, isRecording, onTogglePlay, onToggleSidebar,
   onToggleRecording, hasRecordedEvents, onDownloadMidi,
-  loopLock, onToggleLoopLock, isLoopFull, loopRecordedSteps, loopSteps, onExportLoop,
+  loopLock, onToggleLoopLock, isLoopFull, loopRecordedSteps, loopSteps, onSetLoopSteps, onExportLoop,
 }: HeaderProps) {
   const [dark, setDark] = useState(() => document.documentElement.classList.contains('dark'))
 
@@ -99,6 +101,30 @@ export default function Header({
             <TooltipContent>Loop Lock</TooltipContent>
           </Tooltip>
 
+          {/* Loop Steps Popover */}
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="ghost" size="xs" className="font-mono text-muted-foreground">
+                {loopSteps}st
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-2" align="end">
+              <div className="flex gap-1">
+                {[4, 8, 16, 32].map((n) => (
+                  <Button
+                    key={n}
+                    variant={loopSteps === n ? 'default' : 'ghost'}
+                    size="xs"
+                    className="font-mono"
+                    onClick={() => onSetLoopSteps(n)}
+                  >
+                    {n}
+                  </Button>
+                ))}
+              </div>
+            </PopoverContent>
+          </Popover>
+
           {loopLock && !isLoopFull && (
             <span className="flex items-center gap-1 text-xs font-mono text-muted-foreground">
               <Loader2 size={12} className="animate-spin" />
@@ -132,7 +158,7 @@ export default function Header({
             className="gap-2"
           >
             {isPlaying ? <Square size={14} fill="currentColor" /> : <Play size={14} fill="currentColor" />}
-            {isPlaying ? 'Halt' : 'Start'}
+            {isPlaying ? 'Stop' : 'Start'}
           </Button>
         </div>
       </header>
